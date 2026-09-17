@@ -121,6 +121,28 @@ async completeOnboarding() : Promise<Result<AppSettings, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Validates and registers a new Transcribe Shortcut, then persists it.
+ */
+async changeShortcut(shortcut: string) : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_shortcut", { shortcut }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async startShortcutCapture() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_shortcut_capture") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopShortcutCapture() : Promise<void> {
+    await TAURI_INVOKE("stop_shortcut_capture");
 }
 }
 
@@ -131,12 +153,14 @@ export const events = __makeEvents__<{
 modelDownloadComplete: ModelDownloadComplete,
 modelDownloadFailed: ModelDownloadFailed,
 modelDownloadProgress: ModelDownloadProgress,
-settingsChanged: SettingsChanged
+settingsChanged: SettingsChanged,
+shortcutCaptureEvent: ShortcutCaptureEvent
 }>({
 modelDownloadComplete: "model-download-complete",
 modelDownloadFailed: "model-download-failed",
 modelDownloadProgress: "model-download-progress",
-settingsChanged: "settings-changed"
+settingsChanged: "settings-changed",
+shortcutCaptureEvent: "shortcut-capture-event"
 })
 
 /** user-defined constants **/
@@ -170,6 +194,10 @@ export type Replacement = { trigger: string; value: string }
  * uses it to follow the interface language live.
  */
 export type SettingsChanged = AppSettings
+/**
+ * Key event streamed to the Shortcut capture field.
+ */
+export type ShortcutCaptureEvent = { modifiers: string[]; key: string | null; is_key_down: boolean; hotkey_string: string }
 
 /** tauri-specta globals **/
 

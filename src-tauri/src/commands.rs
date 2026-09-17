@@ -180,6 +180,27 @@ pub fn complete_onboarding(app: AppHandle) -> Result<AppSettings, String> {
     Ok(settings)
 }
 
+/// Validates and registers a new Transcribe Shortcut, then persists it.
+#[tauri::command]
+#[specta::specta]
+pub fn change_shortcut(app: AppHandle, shortcut: String) -> Result<AppSettings, String> {
+    crate::shortcut::change_shortcut(&app, &shortcut)?;
+    let shortcut = shortcut.trim().to_string();
+    Ok(update_settings(&app, |s| s.shortcut = shortcut))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn start_shortcut_capture(app: AppHandle) -> Result<(), String> {
+    crate::shortcut::start_capture(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn stop_shortcut_capture(app: AppHandle) {
+    crate::shortcut::stop_capture(&app);
+}
+
 /// Removing the key also turns Clean and Reformat off.
 #[tauri::command]
 #[specta::specta]

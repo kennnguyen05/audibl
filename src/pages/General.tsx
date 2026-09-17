@@ -6,6 +6,7 @@ import { Group, PageTitle, Row } from "@/components/ui/Row";
 import { Segmented } from "@/components/ui/Segmented";
 import { Select } from "@/components/ui/Select";
 import { Toggle } from "@/components/ui/Toggle";
+import { ShortcutInput } from "@/components/ShortcutInput";
 
 const DEFAULT_MIC = "__default__";
 const ALL_CHANNELS = "__all__";
@@ -40,9 +41,7 @@ export function General() {
 
       <Group title={t("general.shortcutGroup")}>
         <Row label={t("general.transcribeShortcut")}>
-          <kbd className="rounded border border-border bg-bg px-2 py-0.5 text-xs font-mono">
-            {settings.shortcut}
-          </kbd>
+          <ShortcutInput value={settings.shortcut} />
         </Row>
         <Row
           label={t("general.activationMode")}

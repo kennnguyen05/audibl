@@ -8,6 +8,8 @@
   "general": {
     "shortcutGroup": "Phím tắt",
     "transcribeShortcut": "Phím tắt chép lời",
+    "pressKeys": "Nhấn phím…",
+    "shortcutError": "Không dùng được phím tắt này. Hãy thử phím khác.",
     "activationMode": "Chế độ",
     "hold": "Giữ",
     "toggle": "Bật/tắt",
@@ -89,6 +91,11 @@
         "io": "Không lưu được mô hình. Hãy thử lại."
       }
     }
+  },
+  "overlay": {
+    "transcribing": "Đang chép lời…",
+    "cleaning": "Đang làm sạch…",
+    "toggleHint": "Esc huỷ · ↩ xong"
   },
   "tray": {
     "open": "Mở Audible",

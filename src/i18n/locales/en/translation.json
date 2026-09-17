@@ -8,6 +8,8 @@
   "general": {
     "shortcutGroup": "Shortcut",
     "transcribeShortcut": "Transcribe Shortcut",
+    "pressKeys": "Press keys…",
+    "shortcutError": "Couldn't use that shortcut. Try another.",
     "activationMode": "Mode",
     "hold": "Hold",
     "toggle": "Toggle",
@@ -89,6 +91,11 @@
         "io": "The model couldn't be saved. Retry."
       }
     }
+  },
+  "overlay": {
+    "transcribing": "Transcribing…",
+    "cleaning": "Cleaning…",
+    "toggleHint": "Esc cancel · ↩ finish"
   },
   "tray": {
     "open": "Open Audible",

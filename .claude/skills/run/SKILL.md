@@ -21,8 +21,12 @@ Before every launch:
 ```bash
 pkill -f "target/debug/audible" 2>/dev/null
 pkill -f "tauri dev" 2>/dev/null
+lsof -ti tcp:1420 | xargs kill 2>/dev/null   # orphaned Vite keeps the port
 sleep 1
 ```
+
+Symptom of a leftover Vite: `Error: Port 1420 is already in use` and
+`The "beforeDevCommand" terminated with a non-zero status code`.
 
 ## Launch in background
 
@@ -50,6 +54,9 @@ grep -q "Running \`target/debug/audible\`" /path/to/scratchpad/dev.log
 
 Vite's `ready in Nms` and `Local: http://localhost:1420/` lines come first.
 
+Ready line: `Shortcut 'option+space' ready` (only after onboarding is complete and
+Accessibility is granted).
+
 Useful log greps: `Model loaded`, `Model unloaded`, `Transcribed`, `Pasted`,
 `Groq cleanup`. The persistent log file is
 `~/Library/Logs/com.kennnguyen.audible/audible.log`.
@@ -63,6 +70,23 @@ rm -rf ~/Library/Application\ Support/com.kennnguyen.audible
 ```
 
 This also deletes the downloaded model (about 1.5 GB).
+
+## Automated dictation smoke test
+
+Ask Ken first: it takes keyboard focus and plays speech through the speakers.
+The shell running Claude has Accessibility, so synthetic keys reach the event tap.
+
+1. Build a tiny Swift helper that posts `CGEvent` key events to `.cghidEventTap`
+   (Option = keycode 58 with `.maskAlternate`, Space = 49, Return = 36, Esc = 53).
+2. `osascript -e 'tell application "TextEdit" to activate'` and confirm TextEdit is
+   frontmost before pressing anything (a fresh TextEdit launch can show an Open
+   panel that swallows the paste).
+3. Hold mode: Option+Space down, `say -v Samantha "…"`, keys up. Toggle mode: tap
+   Option+Space, `say`, tap Return (or Esc to cancel).
+4. Read the result with `osascript -e 'tell application "TextEdit" to get text of front document'`.
+
+Screenshot only Audible's windows: list window ids with `CGWindowListCopyWindowInfo`
+(the overlay is "Audible Overlay", 240×48, layer 25) and `screencapture -x -o -l<id>`.
 
 ## Cleanup
 

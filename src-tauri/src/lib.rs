@@ -2,11 +2,17 @@ mod actions;
 mod audio;
 mod autostart;
 mod commands;
+mod context;
+mod coordinator;
 mod history;
 mod keychain;
 mod model;
+mod overlay;
+mod paste;
 mod permissions;
+mod pipeline;
 mod settings;
+mod shortcut;
 mod transcription;
 mod tray;
 mod tray_i18n;
@@ -33,16 +39,22 @@ pub fn show_main_window(app: &AppHandle) {
 
 /// True when dictation can run: onboarding done, permissions granted, and
 /// the model on disk. Otherwise the main window must show onboarding.
-fn is_setup_complete(app: &AppHandle) -> bool {
+pub fn is_setup_complete(app: &AppHandle) -> bool {
     get_settings(app).onboarding_complete
         && permissions::has_microphone()
         && permissions::has_accessibility()
         && app.state::<model::ModelManager>().is_ready(app)
 }
 
-/// Runs once setup is complete: at launch, or when onboarding finishes.
-pub fn on_ready(_app: &AppHandle) {
-    log::info!("Setup complete; dictation ready");
+/// Registers the Transcribe Shortcut once onboarding is done and the event
+/// tap can run. A missing model does not block it: pressing the shortcut
+/// then opens the download screen instead of recording.
+pub fn on_ready(app: &AppHandle) {
+    let settings = get_settings(app);
+    if settings.onboarding_complete && permissions::has_accessibility() {
+        shortcut::init(app);
+        log::info!("Shortcut '{}' ready", settings.shortcut);
+    }
 }
 
 fn specta_builder() -> Builder<tauri::Wry> {
@@ -71,12 +83,16 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::start_model_download,
             commands::cancel_model_download,
             commands::complete_onboarding,
+            commands::change_shortcut,
+            commands::start_shortcut_capture,
+            commands::stop_shortcut_capture,
         ])
         .events(collect_events![
             settings::SettingsChanged,
             model::ModelDownloadProgress,
             model::ModelDownloadFailed,
             model::ModelDownloadComplete,
+            shortcut::ShortcutCaptureEvent,
         ])
 }
 
@@ -118,6 +134,8 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_macos_permissions::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_nspanel::init())
         .setup(move |app| {
             specta_builder.mount_events(app);
             let handle = app.handle().clone();
@@ -125,6 +143,7 @@ pub fn run() {
             app.manage(audio::AudioManager::new(&handle));
             transcription::TranscriptionManager::init_backend();
             app.manage(transcription::TranscriptionManager::new(&handle));
+            app.manage(coordinator::Coordinator::new(handle.clone()));
 
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                 .title("Audible")
@@ -134,16 +153,13 @@ pub fn run() {
                 .build()?;
 
             tray::create_tray(&handle)?;
+            overlay::create(&handle);
 
             let settings = get_settings(&handle);
             autostart::apply_autostart(settings.autostart_enabled);
 
-            if is_setup_complete(&handle) {
-                on_ready(&handle);
-                if !settings.effective_start_hidden() {
-                    show_main_window(&handle);
-                }
-            } else {
+            on_ready(&handle);
+            if !is_setup_complete(&handle) || !settings.effective_start_hidden() {
                 show_main_window(&handle);
             }
             Ok(())
