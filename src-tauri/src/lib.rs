@@ -13,6 +13,7 @@ mod permissions;
 mod pipeline;
 mod settings;
 mod shortcut;
+mod text;
 mod transcription;
 mod tray;
 mod tray_i18n;
@@ -86,6 +87,9 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::change_shortcut,
             commands::start_shortcut_capture,
             commands::stop_shortcut_capture,
+            commands::get_history,
+            commands::delete_history_entry,
+            commands::copy_text,
         ])
         .events(collect_events![
             settings::SettingsChanged,
@@ -93,6 +97,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             model::ModelDownloadFailed,
             model::ModelDownloadComplete,
             shortcut::ShortcutCaptureEvent,
+            history::HistoryChanged,
         ])
 }
 

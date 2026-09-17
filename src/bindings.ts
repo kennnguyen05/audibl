@@ -143,6 +143,20 @@ async startShortcutCapture() : Promise<Result<null, string>> {
 },
 async stopShortcutCapture() : Promise<void> {
     await TAURI_INVOKE("stop_shortcut_capture");
+},
+async getHistory() : Promise<HistoryEntry[]> {
+    return await TAURI_INVOKE("get_history");
+},
+async deleteHistoryEntry(timestamp: number) : Promise<HistoryEntry[]> {
+    return await TAURI_INVOKE("delete_history_entry", { timestamp });
+},
+async copyText(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("copy_text", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -150,12 +164,14 @@ async stopShortcutCapture() : Promise<void> {
 
 
 export const events = __makeEvents__<{
+historyChanged: HistoryChanged,
 modelDownloadComplete: ModelDownloadComplete,
 modelDownloadFailed: ModelDownloadFailed,
 modelDownloadProgress: ModelDownloadProgress,
 settingsChanged: SettingsChanged,
 shortcutCaptureEvent: ShortcutCaptureEvent
 }>({
+historyChanged: "history-changed",
 modelDownloadComplete: "model-download-complete",
 modelDownloadFailed: "model-download-failed",
 modelDownloadProgress: "model-download-progress",
@@ -180,6 +196,23 @@ selected_microphone: string | null;
  * Zero-based input channel; `None` mixes all channels down to mono.
  */
 selected_channel: number | null; mute_while_recording: boolean; start_hidden: boolean; autostart_enabled: boolean; show_tray_icon: boolean; remove_filler_words: boolean; app_language: AppLanguage; clean_and_reformat: boolean; custom_words: string[]; replacements: Replacement[] }
+/**
+ * Emitted with the full list after any change.
+ */
+export type HistoryChanged = HistoryEntry[]
+export type HistoryEntry = { 
+/**
+ * Milliseconds since the Unix epoch; also the entry's id.
+ */
+timestamp: number; 
+/**
+ * The text that was pasted.
+ */
+text: string; 
+/**
+ * The transcript before local cleanup and Clean and Reformat.
+ */
+raw_text: string; app_name: string | null }
 export type ModelDownloadComplete = null
 /**
  * `reason` is a code the frontend translates: `network`, `stalled`,

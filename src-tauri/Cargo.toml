@@ -66,6 +66,9 @@ tokio = { version = "1.43.0", features = ["macros", "time", "rt"] }
 tokio-util = "0.7"
 libc = "0.2"
 handy-keys = "0.3.4"
+regex = "1"
+strsim = "0.11.0"
+unicode-normalization = "0.1"
 enigo = "0.6.1"
 tauri-plugin-global-shortcut = "2.3.1"
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "da9c9a8d4eb7f0524a2508988df1a7d9585b4904" }

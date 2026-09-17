@@ -32,7 +32,10 @@
     "remove": "Remove"
   },
   "history": {
-    "empty": "No transcripts yet."
+    "empty": "No transcripts yet.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "delete": "Delete"
   },
   "advanced": {
     "appGroup": "App",

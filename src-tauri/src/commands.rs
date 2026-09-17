@@ -201,6 +201,24 @@ pub fn stop_shortcut_capture(app: AppHandle) {
     crate::shortcut::stop_capture(&app);
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn get_history(app: AppHandle) -> Vec<crate::history::HistoryEntry> {
+    crate::history::load(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn delete_history_entry(app: AppHandle, timestamp: f64) -> Vec<crate::history::HistoryEntry> {
+    crate::history::delete(&app, timestamp)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn copy_text(app: AppHandle, text: String) -> Result<(), String> {
+    crate::history::copy_text(&app, &text)
+}
+
 /// Removing the key also turns Clean and Reformat off.
 #[tauri::command]
 #[specta::specta]

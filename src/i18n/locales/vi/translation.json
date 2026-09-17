@@ -32,7 +32,10 @@
     "remove": "Xoá"
   },
   "history": {
-    "empty": "Chưa có bản chép lời nào."
+    "empty": "Chưa có bản chép lời nào.",
+    "copy": "Sao chép",
+    "copied": "Đã chép",
+    "delete": "Xoá"
   },
   "advanced": {
     "appGroup": "Ứng dụng",

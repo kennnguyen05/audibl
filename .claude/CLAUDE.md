@@ -10,8 +10,9 @@ Audible v1 is being built milestone by milestone from the plan at
 - Milestone 1 (scaffold) done: Tauri 2 + React/TS/Vite/Tailwind v4, tray icon, hidden-window lifecycle, sidebar with 4 pages, tauri-specta bindings.
 - Milestone 2 (settings, pages, i18n) done: setting commands, General/Dictionary/Advanced UIs, History placeholder, Keychain key commands, en/vi locales with parity check.
 - Milestone 3 (audio and model) done: recorder + Silero VAD, mic/channel/mute, onboarding (mic → Accessibility → required model download with resume/verify), transcription manager with lazy load, 10-min unload, en/vi language guard.
-- Milestone 4 (first end-to-end dictation) done: coordinator, handy-keys shortcut + capture UI, dynamic Esc/Return, overlay, paste. Smoke-tested in TextEdit (Hold; Toggle with Return, Esc, second press).
   - Bake-off (2026-09-17, 15 synthetic `say` clips: 6 en, 6 vi, 3 mixed): Qwen3-ASR 1.7B WER 6.7%, 0.86 s per 10 s audio; Whisper large-v3-turbo WER 5.3%, 1.98 s per 10 s. Whisper was clearly better only on mixed vi/en clips (15% vs 32% WER) and wrote numbers as digits. Qwen kept per the gate; re-run with Ken's real clips before release (see Commands).
+- Milestone 4 (first end-to-end dictation) done: coordinator, handy-keys shortcut + capture UI, dynamic Esc/Return, overlay, paste. Smoke-tested in TextEdit (Hold; Toggle with Return, Esc, second press).
+- Milestone 5 (text pipeline) done: en/vi filler removal + stutter collapse, Unicode fuzzy custom words, replacements, History (10 newest) page, tray Copy Last Transcript, frontmost app context. Smoke-tested in TextEdit (en + vi).
 
 ## What this project is
 
@@ -61,9 +62,14 @@ Dev builds compile `transcribe-cpp-sys`, `sha2`, `rubato`, `rustfft` at opt-leve
 - `shortcut.rs`: `ShortcutManager` owns the handy-keys `HotkeyManager` on its own thread (blocking tap swallows registered keys); falls back to tauri-plugin-global-shortcut if the tap can't start. Ids `transcribe`, `cancel` (escape), `finish` (return). Registration waits on that thread, so key events only forward to the coordinator. `start_capture`/`stop_capture` stream `shortcut-capture-event` to `components/ShortcutInput.tsx` and suspend the current shortcut meanwhile.
 - `overlay.rs`: tauri-nspanel non-activating panel (label `recording_overlay`, 240×48) centred above the Dock on the cursor's screen; `show-overlay {state: recording|transcribing|cleaning, toggle}` / `hide-overlay` events to `src/overlay/Overlay.tsx`.
 - `paste.rs`: on the main thread: save clipboard (text, else image) → write text → Cmd + layout-aware V keycode via enigo → restore. `cursor_location()` shares the enigo instance.
-- `pipeline.rs`, `context.rs`, `history.rs`: text processing, frontmost-app context, and history (filled in by Milestones 5–6).
+- `text/filler.rs`: English (um, uh, uhm, umm, er, ah, hmm) and Vietnamese (ờ, ờm, ừm, ưm, ơ, hừm) fillers, always both lists; "à"/"ừ" are kept. Also collapses a word repeated 3+ times and tidies punctuation/capitalization.
+- `text/dictionary.rs`: `apply_custom_words` (NFC, char Levenshtein ≤ 18% of the longer key, 1–3-word n-grams that never cross punctuation, keys ≥ 4 chars; words of 4–5 chars therefore only match exactly) and `apply_replacements` (one leftmost-first regex, longest trigger first, `\b` only on word-character edges, `(?i)` unless Clean and Reformat is on; returns the inserted values).
+- `pipeline.rs`: `process_local` (NFC → fillers if on → custom words → replacements) then Clean and Reformat (Milestone 6). Case sensitivity follows the Clean and Reformat setting even when Groq later fails.
+- `context.rs`: at recording start, frontmost app name + bundle id (NSWorkspace) and focused window title (AX `AXFocusedWindow` → `AXTitle`, truncated to 120 chars).
+- `history.rs`: `history.json` store, newest first, capped at 10 (`push_capped`); entries hold pasted text, raw transcript, app name, timestamp (ms, also the id). Emits `history-changed`; tray Copy Last Transcript copies the newest.
 - `permissions.rs`: sync mic/Accessibility checks. `lib.rs` `is_setup_complete` (onboarding done + permissions + model) gates `on_ready`; otherwise the window opens on onboarding.
 - `autostart.rs`: Launch on Startup via `SMAppService` (fails harmlessly in `tauri dev`).
+- Frontend stores: `src/stores/settings.ts`, `src/stores/history.ts`.
 - Frontend: `src/main.tsx` → `App.tsx` (shows `components/Onboarding.tsx` for new users, or for returning users at the first missing permission/model; else sidebar + pages in `src/pages/`), `src/stores/settings.ts` (zustand mirror; `applySettings(commands.setX(..))` stores the returned settings; `settings-changed` keeps it live), `src/components/ui/` (Group/Row, Toggle, Segmented, Select, TextField/Button, InfoTip), `src/i18n/` (react-i18next, language follows the stored setting and `settings-changed`), `src/overlay/` (recording overlay webview entry), `src/index.css` (color tokens, light/dark).
 
 ## UI rules
