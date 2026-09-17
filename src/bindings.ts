@@ -49,6 +49,11 @@ async setCustomWords(words: string[]) : Promise<AppSettings> {
 async setReplacements(replacements: Replacement[]) : Promise<AppSettings> {
     return await TAURI_INVOKE("set_replacements", { replacements });
 },
+/**
+ * Validates the key against `GET /models` before saving it to the
+ * Keychain: `invalid_key` on 401/403, `unreachable` on a network failure,
+ * timeout, or any other status. Never saves an unvalidated key.
+ */
 async setGroqApiKey(key: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_groq_api_key", { key }) };

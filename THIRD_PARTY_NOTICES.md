@@ -50,3 +50,20 @@ SOFTWARE.
 ## Speech model
 
 The Qwen3-ASR 1.7B GGUF model downloaded at onboarding is published by the Qwen team under the Apache License 2.0 and converted to GGUF by handy-computer on Hugging Face. It is downloaded at runtime and not bundled with the app.
+
+## SCOWL (Spell Checker Oriented Word Lists)
+
+`src-tauri/src/text/common_words_en.txt` is generated from [SCOWL](http://wordlist.aspell.net/) 2020.12.07: the `english-words` and `american-words` lists at levels 10 and 20 (their most common words, drawn from the public-domain Moby Words II and Brian Kelk's UK English Wordlist), lowercased, ASCII-only, letters only, at least 4 characters, deduplicated. Used to keep common words from being replaced by custom words.
+
+```
+Copyright 2000-2018 by Kevin Atkinson
+
+Permission to use, copy, modify, distribute and sell these word
+lists, the associated scripts, the output created from the scripts,
+and its documentation for any purpose is hereby granted without fee,
+provided that the above copyright notice appears in all copies and
+that both that copyright notice and this permission notice appear in
+supporting documentation. Kevin Atkinson makes no representations
+about the suitability of this array for any purpose. It is provided
+"as is" without express or implied warranty.
+```

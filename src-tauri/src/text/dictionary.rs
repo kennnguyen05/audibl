@@ -5,17 +5,48 @@
 //! 4 characters). Handy's version (`text.rs`, MIT) skips non-ASCII words; this
 //! one keeps diacritics, so "Nguyen" can become "Nguyễn".
 //!
+//! Real words are protected: a single common English word (SCOWL levels
+//! 10–20, `common_words_en.txt`) is never changed, not even recased, so
+//! "right" stays "right" with custom "Wright" and "apple" stays "apple" with
+//! "Apple"; the Groq step decides those from context. A single word with
+//! non-ASCII letters (Vietnamese) is only normalized to an exact case-insensitive
+//! match, so "nguyên" stays but "nguyễn" becomes "Nguyễn". Multi-word n-grams
+//! ("charge bee" → "ChargeBee") are corrected even when each word is common, but
+//! only if every word is needed: "on cloud flare" keeps "on".
+//!
 //! Replacements: whole-phrase matches, longest trigger first. Case-insensitive
 //! unless Clean and Reformat is on. Inserted values are always kept exactly as
 //! typed and are returned so the Groq step can require them verbatim.
 
 use crate::settings::Replacement;
 use regex::{Captures, Regex};
+use std::collections::HashSet;
+use std::sync::OnceLock;
 use unicode_normalization::UnicodeNormalization;
 
 const MAX_DISTANCE_RATIO: f64 = 0.18;
 const MIN_KEY_CHARS: usize = 4;
 const MAX_NGRAM: usize = 3;
+
+/// Lowercase ASCII, 4+ letters, one per line; see THIRD_PARTY_NOTICES.md.
+const COMMON_WORDS_EN: &str = include_str!("common_words_en.txt");
+
+fn common_words_en() -> &'static HashSet<&'static str> {
+    static SET: OnceLock<HashSet<&'static str>> = OnceLock::new();
+    SET.get_or_init(|| COMMON_WORDS_EN.lines().filter(|l| !l.is_empty()).collect())
+}
+
+/// Whether a single word (its `match_key`) must be left alone when it matches
+/// a custom word at `ratio`: a common English word is never changed, not even
+/// recased; a word with non-ASCII letters (a Vietnamese syllable, which ASR
+/// only emits for real syllables) is only normalized to an exact match.
+fn is_protected_word(key: &str, ratio: f64) -> bool {
+    common_words_en().contains(key) || (!key.is_ascii() && ratio > 0.0)
+}
+
+fn ngram_key(words: &[&str]) -> String {
+    words.iter().map(|w| match_key(w)).collect()
+}
 
 pub fn nfc(text: &str) -> String {
     text.nfc().collect()
@@ -81,16 +112,27 @@ pub fn apply_custom_words(text: &str, custom_words: &[String]) -> String {
             {
                 break;
             }
-            let candidate: String = ngram.iter().map(|w| match_key(w)).collect();
+            let candidate = ngram_key(ngram);
             if candidate.chars().count() < MIN_KEY_CHARS {
                 continue;
             }
             for (key, word) in &keys {
                 let ratio = distance_ratio(&candidate, key);
-                let better = best.is_none_or(|(_, _, r)| ratio < r);
-                if ratio <= MAX_DISTANCE_RATIO && better {
-                    best = Some((n, word, ratio));
+                if ratio > MAX_DISTANCE_RATIO || best.is_some_and(|(_, _, r)| ratio >= r) {
+                    continue;
                 }
+                if n == 1 && is_protected_word(&candidate, ratio) {
+                    continue;
+                }
+                // Every word must belong to the term: "on cloud flare" is
+                // "on" + "Cloudflare", not "Cloudflare".
+                if n > 1
+                    && (distance_ratio(&ngram_key(&ngram[1..]), key) <= ratio
+                        || distance_ratio(&ngram_key(&ngram[..n - 1]), key) <= ratio)
+                {
+                    continue;
+                }
+                best = Some((n, word, ratio));
             }
         }
 
@@ -219,6 +261,62 @@ mod tests {
             apply_custom_words("the cloud is down", &words(&["Claude"])),
             "the cloud is down"
         );
+    }
+
+    #[test]
+    fn common_word_is_not_replaced_by_close_custom_word() {
+        let text = "Check to see if the spelling is right.";
+        assert_eq!(apply_custom_words(text, &words(&["Wright"])), text);
+    }
+
+    #[test]
+    fn common_word_is_not_recased() {
+        assert_eq!(
+            apply_custom_words("an apple a day", &words(&["Apple"])),
+            "an apple a day"
+        );
+    }
+
+    #[test]
+    fn uncommon_exact_word_is_recased() {
+        assert_eq!(
+            apply_custom_words("mr wright called", &words(&["Wright"])),
+            "mr Wright called"
+        );
+    }
+
+    #[test]
+    fn multi_word_ngram_of_common_words_is_corrected() {
+        assert_eq!(
+            apply_custom_words(
+                "open visual studio code now",
+                &words(&["Visual Studio Code"])
+            ),
+            "open Visual Studio Code now"
+        );
+        assert_eq!(
+            apply_custom_words("deploy on cloud flare", &words(&["Cloudflare"])),
+            "deploy on Cloudflare"
+        );
+    }
+
+    #[test]
+    fn vietnamese_syllable_is_not_replaced() {
+        // "nguyên" is a real word, one diacritic away from "Nguyễn".
+        assert_eq!(
+            apply_custom_words("số nguyên dương", &words(&["Nguyễn"])),
+            "số nguyên dương"
+        );
+    }
+
+    #[test]
+    fn common_word_list_is_well_formed() {
+        assert!(common_words_en().len() > 5000);
+        assert!(common_words_en().contains("right"));
+        assert!(!common_words_en().contains("wright"));
+        assert!(COMMON_WORDS_EN
+            .lines()
+            .all(|l| l.len() >= MIN_KEY_CHARS && l.bytes().all(|b| b.is_ascii_lowercase())));
     }
 
     #[test]

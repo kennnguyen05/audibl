@@ -10,6 +10,8 @@
   --color-muted: #71717a;
   --color-accent: #2563eb;
   --color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-warning: #b45309;
   --color-control: #e4e4e7;
 
   font-family:
@@ -32,6 +34,8 @@
     --color-muted: #a1a1aa;
     --color-accent: #3b82f6;
     --color-danger: #f87171;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
     --color-control: #3f3f46;
   }
 }
@@ -45,6 +49,8 @@
   --color-muted: var(--color-muted);
   --color-accent: var(--color-accent);
   --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
   --color-control: var(--color-control);
 }
 

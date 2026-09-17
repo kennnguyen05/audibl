@@ -57,10 +57,17 @@
     "keySaved": "Saved",
     "keyNotSet": "Not set",
     "keyPlaceholder": "gsk_…",
+    "keyRedacted": "gsk_••••••••••••••••",
     "save": "Save",
     "remove": "Remove",
+    "replace": "Replace",
     "keySaveFailed": "Couldn't save the key to the Keychain.",
-    "keyRemoveFailed": "Couldn't remove the key from the Keychain."
+    "keyRemoveFailed": "Couldn't remove the key from the Keychain.",
+    "keySaveSuccess": "Key saved.",
+    "keyEmpty": "Enter a key first.",
+    "keyInvalid": "That key isn't valid. Check it and try again.",
+    "keyUnreachable": "Couldn't reach Groq. Check your connection and try again.",
+    "cleanNeedsKey": "Get a free key at console.groq.com/keys, paste it in the field below, press Save, then turn this on."
   },
   "onboarding": {
     "stepOf": "Step {{step}} of {{total}}",

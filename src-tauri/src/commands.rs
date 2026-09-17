@@ -92,10 +92,18 @@ pub fn set_replacements(app: AppHandle, replacements: Vec<Replacement>) -> AppSe
     update_settings(&app, |s| s.replacements = replacements)
 }
 
+/// Validates the key against `GET /models` before saving it to the
+/// Keychain: `invalid_key` on 401/403, `unreachable` on a network failure,
+/// timeout, or any other status. Never saves an unvalidated key.
 #[tauri::command]
 #[specta::specta]
-pub fn set_groq_api_key(key: String) -> Result<(), String> {
-    keychain::set_groq_api_key(&key)
+pub async fn set_groq_api_key(key: String) -> Result<(), String> {
+    let key = key.trim();
+    if key.is_empty() {
+        return Err("empty_key".into());
+    }
+    crate::cleanup::validate_api_key(key).await?;
+    keychain::set_groq_api_key(key)
 }
 
 #[tauri::command]

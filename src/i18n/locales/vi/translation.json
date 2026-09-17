@@ -57,10 +57,17 @@
     "keySaved": "Đã lưu",
     "keyNotSet": "Chưa đặt",
     "keyPlaceholder": "gsk_…",
+    "keyRedacted": "gsk_••••••••••••••••",
     "save": "Lưu",
     "remove": "Xoá",
+    "replace": "Thay khoá khác",
     "keySaveFailed": "Không lưu được khoá vào Keychain.",
-    "keyRemoveFailed": "Không xoá được khoá khỏi Keychain."
+    "keyRemoveFailed": "Không xoá được khoá khỏi Keychain.",
+    "keySaveSuccess": "Đã lưu khoá.",
+    "keyEmpty": "Hãy nhập khoá trước.",
+    "keyInvalid": "Khoá này không hợp lệ. Kiểm tra lại và thử lại.",
+    "keyUnreachable": "Không kết nối được tới Groq. Kiểm tra mạng và thử lại.",
+    "cleanNeedsKey": "Lấy khoá miễn phí tại console.groq.com/keys, dán vào ô bên dưới, nhấn Lưu, rồi bật tính năng này."
   },
   "onboarding": {
     "stepOf": "Bước {{step}}/{{total}}",
