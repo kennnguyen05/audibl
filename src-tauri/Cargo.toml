@@ -59,7 +59,7 @@ rustfft = "6.4.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 transcribe-cpp = { version = "0.2.3", default-features = false, features = ["metal"] }
 whatlang = "0.16"
-reqwest = { version = "0.12", features = ["stream"] }
+reqwest = { version = "0.12", features = ["stream", "json"] }
 futures-util = "0.3"
 sha2 = "0.10"
 tokio = { version = "1.43.0", features = ["macros", "time", "rt"] }

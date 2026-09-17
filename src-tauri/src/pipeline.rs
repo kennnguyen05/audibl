@@ -3,7 +3,7 @@
 //! (case-sensitive only when Clean and Reformat is on) → Clean and Reformat
 //! (if on) → output for paste and history.
 
-use crate::context;
+use crate::{cleanup, context};
 use crate::settings::get_settings;
 use crate::text::{dictionary, filler};
 use crate::transcription::Transcription;
@@ -36,7 +36,7 @@ pub fn process_local(
 pub fn process(app: &AppHandle, session: u64, transcription: &Transcription) -> Option<PipelineOutput> {
     let settings = get_settings(app);
     let context = context::current();
-    let (local_text, _inserted) = process_local(
+    let (local_text, inserted) = process_local(
         &transcription.text,
         settings.remove_filler_words,
         &settings.custom_words,
@@ -50,11 +50,53 @@ pub fn process(app: &AppHandle, session: u64, transcription: &Transcription) -> 
         return None;
     }
 
+    let mut final_text = local_text.clone();
+    if settings.clean_and_reformat && !local_text.trim().is_empty() {
+        match crate::keychain::get_groq_api_key() {
+            Some(key) => {
+                crate::overlay::show(app, crate::overlay::OverlayState::Cleaning, false);
+                let input = cleanup::CleanupInput::new(
+                    &context,
+                    transcription.language,
+                    &settings.custom_words,
+                    &inserted,
+                    &local_text,
+                );
+                let started = std::time::Instant::now();
+                let groq = tauri::async_runtime::block_on(async {
+                    tokio::select! {
+                        result = cleanup::request(&key, &input) => Some(result),
+                        _ = wait_for_cancel(session) => None,
+                    }
+                })?;
+                if !crate::actions::is_session_active(session) {
+                    return None;
+                }
+                let (text, used) = cleanup::choose_output(groq, &local_text, &inserted);
+                log::info!(
+                    "Groq cleanup {} in {:.2}s",
+                    if used { "applied" } else { "skipped (local text kept)" },
+                    started.elapsed().as_secs_f32()
+                );
+                final_text = text;
+            }
+            None => log::warn!("Clean and Reformat is on but no Groq key is saved"),
+        }
+    }
+
     Some(PipelineOutput {
         raw_text: transcription.text.clone(),
-        final_text: local_text,
+        final_text,
         app_name: context.app_name,
     })
+}
+
+/// Resolves when Esc (or tray Cancel) ends the session, so an in-flight
+/// Groq request is dropped instead of waiting for its timeout.
+async fn wait_for_cancel(session: u64) {
+    while crate::actions::is_session_active(session) {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
 }
 
 #[cfg(test)]

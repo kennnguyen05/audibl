@@ -1,6 +1,7 @@
 mod actions;
 mod audio;
 mod autostart;
+mod cleanup;
 mod commands;
 mod context;
 mod coordinator;

@@ -7,9 +7,14 @@
 
 use keyring::Entry;
 use security_framework::item::{ItemClass, ItemSearchOptions, Limit};
+use std::sync::Mutex;
 
 const SERVICE: &str = "com.kennnguyen.audible";
 const ACCOUNT: &str = "groq_api_key";
+
+/// The key read once per launch, so dictations don't hit the Keychain (and
+/// its access prompt in unsigned dev builds) every time.
+static CACHED_KEY: Mutex<Option<String>> = Mutex::new(None);
 
 fn entry() -> Result<Entry, String> {
     Entry::new(SERVICE, ACCOUNT).map_err(|e| format!("keychain: {e}"))
@@ -22,12 +27,20 @@ pub fn set_groq_api_key(key: &str) -> Result<(), String> {
     }
     entry()?
         .set_password(key)
-        .map_err(|e| format!("keychain: {e}"))
+        .map_err(|e| format!("keychain: {e}"))?;
+    *CACHED_KEY.lock().unwrap() = Some(key.to_string());
+    Ok(())
 }
 
 pub fn get_groq_api_key() -> Option<String> {
+    if let Some(key) = CACHED_KEY.lock().unwrap().clone() {
+        return Some(key);
+    }
     match entry().ok()?.get_password() {
-        Ok(key) if !key.trim().is_empty() => Some(key),
+        Ok(key) if !key.trim().is_empty() => {
+            *CACHED_KEY.lock().unwrap() = Some(key.clone());
+            Some(key)
+        }
         Ok(_) => None,
         Err(keyring::Error::NoEntry) => None,
         Err(e) => {
@@ -50,6 +63,7 @@ pub fn has_groq_api_key() -> bool {
 }
 
 pub fn clear_groq_api_key() -> Result<(), String> {
+    *CACHED_KEY.lock().unwrap() = None;
     match entry()?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(format!("keychain: {e}")),
