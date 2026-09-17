@@ -337,13 +337,6 @@ fn write_input_to_ring<T>(
     }
 }
 
-pub fn is_no_input_device_error(message: &str) -> bool {
-    let normalized = message.to_lowercase();
-    normalized.contains("no input device found")
-        || (normalized.contains("failed to fetch preferred config")
-            && normalized.contains("coreaudio"))
-}
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ChunkDisposition {
     Capture,
@@ -364,8 +357,11 @@ impl CaptureProcessor {
     fn new(in_sample_rate: u32, vad: SharedVad, level_cb: Option<LevelCallback>) -> Self {
         let frame_samples = vad.lock().unwrap().frame_samples();
         let frame_duration = Duration::from_secs_f64(frame_samples as f64 / SAMPLE_RATE as f64);
-        let resampler =
-            FrameResampler::new(in_sample_rate as usize, SAMPLE_RATE as usize, frame_duration);
+        let resampler = FrameResampler::new(
+            in_sample_rate as usize,
+            SAMPLE_RATE as usize,
+            frame_duration,
+        );
 
         let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
         let window_size = [256usize, 512, 1024, 2048]

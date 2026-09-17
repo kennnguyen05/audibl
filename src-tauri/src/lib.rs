@@ -12,6 +12,7 @@ mod overlay;
 mod paste;
 mod permissions;
 mod pipeline;
+mod secure_input;
 mod settings;
 mod shortcut;
 mod text;
@@ -165,6 +166,7 @@ pub fn run() {
             autostart::apply_autostart(settings.autostart_enabled);
 
             on_ready(&handle);
+            secure_input::start_monitor(&handle);
             if !is_setup_complete(&handle) || !settings.effective_start_hidden() {
                 show_main_window(&handle);
             }
@@ -214,7 +216,8 @@ pub fn run() {
         // ggml-metal asserts if a model's Metal resources outlive static
         // destructors, so drop the engine before exit.
         tauri::RunEvent::Exit => {
-            if let Some(tm) = app.try_state::<std::sync::Arc<transcription::TranscriptionManager>>() {
+            if let Some(tm) = app.try_state::<std::sync::Arc<transcription::TranscriptionManager>>()
+            {
                 tm.unload();
             }
         }

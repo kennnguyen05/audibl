@@ -50,17 +50,19 @@ impl AudioManager {
         let vad = SmoothedVad::with_default_timing(Box::new(silero));
         let app = self.app.clone();
         let last_emit = AtomicU64::new(0);
-        Ok(AudioRecorder::new(Box::new(vad)).with_level_callback(move |levels| {
-            // ~30 FPS is plenty for the overlay waveform.
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as u64;
-            if now.saturating_sub(last_emit.load(Ordering::Relaxed)) >= LEVEL_EMIT_INTERVAL_MS {
-                last_emit.store(now, Ordering::Relaxed);
-                let _ = app.emit_to(OVERLAY_LABEL, "mic-level", levels);
-            }
-        }))
+        Ok(
+            AudioRecorder::new(Box::new(vad)).with_level_callback(move |levels| {
+                // ~30 FPS is plenty for the overlay waveform.
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as u64;
+                if now.saturating_sub(last_emit.load(Ordering::Relaxed)) >= LEVEL_EMIT_INTERVAL_MS {
+                    last_emit.store(now, Ordering::Relaxed);
+                    let _ = app.emit_to(OVERLAY_LABEL, "mic-level", levels);
+                }
+            }),
+        )
     }
 
     pub fn start_recording(&self) -> Result<(), String> {
@@ -99,7 +101,11 @@ impl AudioManager {
             let mut guard = self.recorder.lock().unwrap();
             let samples = guard
                 .as_ref()
-                .and_then(|r| r.stop().inspect_err(|e| log::error!("stop failed: {e}")).ok())
+                .and_then(|r| {
+                    r.stop()
+                        .inspect_err(|e| log::error!("stop failed: {e}"))
+                        .ok()
+                })
                 .unwrap_or_default();
             if let Some(r) = guard.as_mut() {
                 r.close();

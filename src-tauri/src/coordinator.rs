@@ -32,11 +32,20 @@ pub enum Input {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Effect {
     /// Open the mic and show the overlay. `mode` decides whether Return is armed.
-    StartRecording { session: u64, mode: ActivationMode },
+    StartRecording {
+        session: u64,
+        mode: ActivationMode,
+    },
     /// Stop the mic, transcribe, and paste.
-    FinishRecording { session: u64 },
-    CancelRecording { session: u64 },
-    CancelProcessing { session: u64 },
+    FinishRecording {
+        session: u64,
+    },
+    CancelRecording {
+        session: u64,
+    },
+    CancelProcessing {
+        session: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,8 +53,13 @@ pub enum Stage {
     Idle,
     /// The mode is fixed when recording starts, so changing the setting
     /// mid-recording cannot strand a session.
-    Recording { session: u64, mode: ActivationMode },
-    Processing { session: u64 },
+    Recording {
+        session: u64,
+        mode: ActivationMode,
+    },
+    Processing {
+        session: u64,
+    },
 }
 
 #[derive(Debug)]
@@ -176,7 +190,10 @@ mod tests {
         let mut d = Driver::new();
         assert_eq!(
             d.send(Input::ShortcutPressed, Hold),
-            Some(Effect::StartRecording { session: 1, mode: Hold })
+            Some(Effect::StartRecording {
+                session: 1,
+                mode: Hold
+            })
         );
         assert_eq!(
             d.send(Input::ShortcutReleased, Hold),
@@ -214,7 +231,10 @@ mod tests {
         let mut d = Driver::new();
         assert_eq!(
             d.send(Input::ShortcutPressed, Toggle),
-            Some(Effect::StartRecording { session: 1, mode: Toggle })
+            Some(Effect::StartRecording {
+                session: 1,
+                mode: Toggle
+            })
         );
         assert_eq!(d.send(Input::ShortcutReleased, Toggle), None);
         assert!(matches!(d.state.stage, Stage::Recording { .. }));
@@ -329,7 +349,11 @@ mod tests {
         let now = Instant::now();
         state.on_input(Input::ShortcutPressed, Toggle, now);
         assert_eq!(
-            state.on_input(Input::ShortcutPressed, Toggle, now + Duration::from_millis(10)),
+            state.on_input(
+                Input::ShortcutPressed,
+                Toggle,
+                now + Duration::from_millis(10)
+            ),
             None
         );
         assert!(matches!(state.stage, Stage::Recording { .. }));

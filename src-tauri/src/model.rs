@@ -127,7 +127,7 @@ pub enum DownloadOutcome {
 }
 
 pub enum DownloadEvent {
-    Progress { downloaded: u64, total: u64 },
+    Progress { downloaded: u64 },
     Verifying,
 }
 
@@ -307,10 +307,7 @@ pub async fn download_resumable(
         File::create(partial)?
     };
     let mut downloaded = resume_from;
-    emit(DownloadEvent::Progress {
-        downloaded,
-        total: expected_size,
-    });
+    emit(DownloadEvent::Progress { downloaded });
 
     let mut last_emit = Instant::now();
     let mut stream = response.bytes_stream();
@@ -327,24 +324,20 @@ pub async fn download_resumable(
         if downloaded + chunk.len() as u64 > expected_size {
             drop(file);
             let _ = fs::remove_file(partial);
-            return Err(DownloadError::Server("sent more bytes than expected".into()));
+            return Err(DownloadError::Server(
+                "sent more bytes than expected".into(),
+            ));
         }
         file.write_all(&chunk)?;
         downloaded += chunk.len() as u64;
         if last_emit.elapsed() >= PROGRESS_INTERVAL {
-            emit(DownloadEvent::Progress {
-                downloaded,
-                total: expected_size,
-            });
+            emit(DownloadEvent::Progress { downloaded });
             last_emit = Instant::now();
         }
     }
     file.flush()?;
     drop(file);
-    emit(DownloadEvent::Progress {
-        downloaded,
-        total: expected_size,
-    });
+    emit(DownloadEvent::Progress { downloaded });
 
     if downloaded != expected_size {
         // Connection closed early: keep the partial so Retry resumes.
@@ -570,7 +563,11 @@ mod tests {
         (format!("http://{addr}/model"), handle)
     }
 
-    async fn download(url: &str, partial: &Path, body: &[u8]) -> Result<DownloadOutcome, DownloadError> {
+    async fn download(
+        url: &str,
+        partial: &Path,
+        body: &[u8],
+    ) -> Result<DownloadOutcome, DownloadError> {
         download_resumable(
             url,
             partial,
@@ -594,7 +591,10 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let partial = dir.path().join("m.partial");
 
-        assert_eq!(download(&url, &partial, body).await, Ok(DownloadOutcome::Completed));
+        assert_eq!(
+            download(&url, &partial, body).await,
+            Ok(DownloadOutcome::Completed)
+        );
         assert_eq!(fs::read(&partial).unwrap(), body);
         assert!(!server.await.unwrap().contains("range:"));
     }
@@ -604,7 +604,10 @@ mod tests {
         let body = b"helloworld";
         let (url, server) = serve_once(http_response(
             "206 Partial Content",
-            &["Content-Range: bytes 5-9/10".into(), "Content-Length: 5".into()],
+            &[
+                "Content-Range: bytes 5-9/10".into(),
+                "Content-Length: 5".into(),
+            ],
             &body[5..],
         ))
         .await;
@@ -612,7 +615,10 @@ mod tests {
         let partial = dir.path().join("m.partial");
         fs::write(&partial, &body[..5]).unwrap();
 
-        assert_eq!(download(&url, &partial, body).await, Ok(DownloadOutcome::Completed));
+        assert_eq!(
+            download(&url, &partial, body).await,
+            Ok(DownloadOutcome::Completed)
+        );
         assert_eq!(fs::read(&partial).unwrap(), body);
         assert!(server.await.unwrap().contains("range: bytes=5-"));
     }
@@ -630,7 +636,10 @@ mod tests {
         let partial = dir.path().join("m.partial");
         fs::write(&partial, b"hello").unwrap();
 
-        assert_eq!(download(&url, &partial, body).await, Ok(DownloadOutcome::Completed));
+        assert_eq!(
+            download(&url, &partial, body).await,
+            Ok(DownloadOutcome::Completed)
+        );
         assert_eq!(fs::read(&partial).unwrap(), body);
     }
 

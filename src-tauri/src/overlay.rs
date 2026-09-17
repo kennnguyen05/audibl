@@ -87,7 +87,8 @@ fn position(app: &AppHandle) -> Option<(f64, f64)> {
         .or_else(|| app.primary_monitor().ok().flatten())?;
 
     let scale = monitor.scale_factor();
-    let x = monitor.position().x as f64 / scale + (monitor.size().width as f64 / scale - WIDTH) / 2.0;
+    let x =
+        monitor.position().x as f64 / scale + (monitor.size().width as f64 / scale - WIDTH) / 2.0;
     let work = monitor.work_area();
     let bottom = (work.position.y as f64 + work.size.height as f64) / scale;
     Some((x, bottom - HEIGHT - BOTTOM_OFFSET))

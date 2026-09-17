@@ -103,9 +103,15 @@ pub fn sanitize_response(raw: &str) -> String {
 
 /// Groq's output only wins when it is non-empty and keeps every inserted
 /// replacement value exactly (case-sensitive substring).
-pub fn choose_output(groq: Option<String>, local: &str, keep_verbatim: &[String]) -> (String, bool) {
+pub fn choose_output(
+    groq: Option<String>,
+    local: &str,
+    keep_verbatim: &[String],
+) -> (String, bool) {
     match groq {
-        Some(text) if !text.is_empty() && keep_verbatim.iter().all(|v| text.contains(v.as_str())) => {
+        Some(text)
+            if !text.is_empty() && keep_verbatim.iter().all(|v| text.contains(v.as_str())) =>
+        {
             (text, true)
         }
         Some(text) if !text.is_empty() => {
@@ -196,7 +202,10 @@ mod tests {
 
     #[test]
     fn sanitize_strips_think_quotes_and_whitespace() {
-        assert_eq!(sanitize_response("<think>hmm</think>\n  Hello there. "), "Hello there.");
+        assert_eq!(
+            sanitize_response("<think>hmm</think>\n  Hello there. "),
+            "Hello there."
+        );
         assert_eq!(sanitize_response("\"Hello there.\""), "Hello there.");
         assert_eq!(sanitize_response("“Xin chào.”"), "Xin chào.");
         assert_eq!(sanitize_response("<think>unterminated"), "");
@@ -237,7 +246,10 @@ mod tests {
 
     #[test]
     fn local_text_used_when_groq_fails_or_is_empty() {
-        assert_eq!(choose_output(None, "local", &[]), ("local".to_string(), false));
+        assert_eq!(
+            choose_output(None, "local", &[]),
+            ("local".to_string(), false)
+        );
         assert_eq!(
             choose_output(Some(String::new()), "local", &[]),
             ("local".to_string(), false)
@@ -277,7 +289,12 @@ mod tests {
             let input = CleanupInput::new(&ctx, language, &dictionary, &keep, transcript);
             let started = std::time::Instant::now();
             let output = runtime.block_on(request(&key, &input));
-            println!("--- {:?} ({:.2}s)\n{:?}", ctx.app_name, started.elapsed().as_secs_f32(), output);
+            println!(
+                "--- {:?} ({:.2}s)\n{:?}",
+                ctx.app_name,
+                started.elapsed().as_secs_f32(),
+                output
+            );
             let (text, used) = choose_output(output, transcript, &keep);
             assert!(used, "Groq output rejected: {text}");
         }

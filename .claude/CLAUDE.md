@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Audible v1 is being built milestone by milestone from the plan at
-`~/.claude/plans/let-s-now-create-audible-crystalline-codd.md` (read its "Handoff" section first).
+Audible v1 was built milestone by milestone (one commit each) from the plan at
+`~/.claude/plans/let-s-now-create-audible-crystalline-codd.md`. All seven milestones are implemented; the plan's manual E2E checklist is only partly run (see "Not yet verified").
 
 - Milestone 1 (scaffold) done: Tauri 2 + React/TS/Vite/Tailwind v4, tray icon, hidden-window lifecycle, sidebar with 4 pages, tauri-specta bindings.
 - Milestone 2 (settings, pages, i18n) done: setting commands, General/Dictionary/Advanced UIs, History placeholder, Keychain key commands, en/vi locales with parity check.
@@ -14,7 +14,22 @@ Audible v1 is being built milestone by milestone from the plan at
 - Milestone 4 (first end-to-end dictation) done: coordinator, handy-keys shortcut + capture UI, dynamic Esc/Return, overlay, paste. Smoke-tested in TextEdit (Hold; Toggle with Return, Esc, second press).
 - Milestone 5 (text pipeline) done: en/vi filler removal + stutter collapse, Unicode fuzzy custom words, replacements, History (10 newest) page, tray Copy Last Transcript, frontmost app context. Smoke-tested in TextEdit (en + vi).
 - Milestone 6 (Clean and Reformat) done: Groq client, prompt, verbatim guard, cancel-aware request, "Cleaning…" overlay. Unit-tested plus ignored live tests (`GROQ_API_KEY=… cargo test groq_live -- --ignored --nocapture`); not yet exercised through the in-app key field.
+- Milestone 7 (wrap-up) done: Secure Input detection with a tray warning, `THIRD_PARTY_NOTICES.md`, clippy clean.
 
+### Not yet verified (run by hand)
+
+- Fresh onboarding on a clean data dir, Wi-Fi off mid-download (Retry resumes), quit mid-download and relaunch, deleting the model after onboarding.
+- Clean and Reformat through the Advanced page key field (Keychain Access entry, Messages vs Gmail formatting, invalid key pastes local text).
+- Interface Language switch updating main window, overlay, and tray live; Vietnamese-locale first launch.
+- Launch on Startup (needs a signed bundle, not `tauri dev`), Show Menu Bar Icon / Start Hidden interaction, `AUDIBLE_UNLOAD_SECS=30` unload/reload in the log.
+- Visual pass of Dictionary, History, and Advanced pages (tooltips only on Advanced) and Vietnamese copy review by Ken.
+
+### Known limitations
+
+- Consecutive dictations are pasted with no separator (no automatic leading space).
+- Custom words of 4–5 characters are only corrected on an exact case-insensitive match (e.g. "Tory" is not corrected to "Tauri"); the Groq step still sees them as preferred spellings.
+- Secure Input only warns; Handy's Carbon fallback re-registration is not ported.
+- "Audible" is an Amazon trademark: rename before public distribution.
 ## What this project is
 
 **Audible**: a macOS-only voice-to-text dictation app, cloning Wispr Flow. Press a shortcut, speak English or Vietnamese, and the text is pasted into the focused app. v1 scope:
@@ -69,7 +84,8 @@ Dev builds compile `transcribe-cpp-sys`, `sha2`, `rubato`, `rustfft` at opt-leve
 - `cleanup.rs`: Groq `openai/gpt-oss-120b`, `reasoning_effort: "low"`, `include_reasoning: false`, 10 s timeout. User message is JSON `{app, bundle_id, window_title, language, dictionary, keep_verbatim, transcript}`. `sanitize_response` strips `<think>`, wrapping quotes, whitespace. `choose_output` keeps the local text if Groq failed, returned nothing, or lost/re-cased any `keep_verbatim` value (the replacement values inserted locally). `pipeline.rs` races the request against the session being cancelled.
 - `context.rs`: at recording start, frontmost app name + bundle id (NSWorkspace) and focused window title (AX `AXFocusedWindow` → `AXTitle`, truncated to 120 chars).
 - `history.rs`: `history.json` store, newest first, capped at 10 (`push_capped`); entries hold pasted text, raw transcript, app name, timestamp (ms, also the id). Emits `history-changed`; tray Copy Last Transcript copies the newest.
-- `permissions.rs`: sync mic/Accessibility checks. `lib.rs` `is_setup_complete` (onboarding done + permissions + model) gates `on_ready`; otherwise the window opens on onboarding.
+- `secure_input.rs`: polls `IsSecureEventInputEnabled()` every second (only while the handy-keys tap is the backend); held ≥ 3 s (`SustainTracker`) shows the tray warning item, released clears it.
+- `permissions.rs`: sync mic/Accessibility checks. `lib.rs` `on_ready` registers the shortcut once onboarding is done and Accessibility is granted (a missing model doesn't block it: the press opens the download screen). `is_setup_complete` (onboarding + permissions + model) decides whether launch shows the window and whether a press records.
 - `autostart.rs`: Launch on Startup via `SMAppService` (fails harmlessly in `tauri dev`).
 - Frontend stores: `src/stores/settings.ts`, `src/stores/history.ts`.
 - Frontend: `src/main.tsx` → `App.tsx` (shows `components/Onboarding.tsx` for new users, or for returning users at the first missing permission/model; else sidebar + pages in `src/pages/`), `src/stores/settings.ts` (zustand mirror; `applySettings(commands.setX(..))` stores the returned settings; `settings-changed` keeps it live), `src/components/ui/` (Group/Row, Toggle, Segmented, Select, TextField/Button, InfoTip), `src/i18n/` (react-i18next, language follows the stored setting and `settings-changed`), `src/overlay/` (recording overlay webview entry), `src/index.css` (color tokens, light/dark).
@@ -87,4 +103,4 @@ Read-only, never edit. Handy (MIT) is the architectural reference Audible ports 
 
 ## Skill: `.claude/skills/run`
 
-Launches `bun run tauri dev` in the background and checks `target/debug/audible` in the log. To screenshot only Audible's window (never the whole screen), find its window id with `CGWindowListCopyWindowInfo` and use `screencapture -x -o -l<id>`.
+Launches `bun run tauri dev` in the background and waits for `Shortcut 'option+space' ready` in the log. It also documents the automated dictation smoke test (synthetic keys + `say` into TextEdit; ask Ken first) and how to screenshot only Audible's windows.

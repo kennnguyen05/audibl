@@ -119,7 +119,8 @@ impl ShortcutManager {
                         reply,
                     })
                     .map_err(|_| "shortcut thread stopped".to_string())?;
-                rx.recv().map_err(|_| "shortcut thread stopped".to_string())?
+                rx.recv()
+                    .map_err(|_| "shortcut thread stopped".to_string())?
             }
             Backend::Tauri(registered) => {
                 let shortcut: Shortcut = hotkey
@@ -148,7 +149,8 @@ impl ShortcutManager {
                         reply,
                     })
                     .map_err(|_| "shortcut thread stopped".to_string())?;
-                rx.recv().map_err(|_| "shortcut thread stopped".to_string())?
+                rx.recv()
+                    .map_err(|_| "shortcut thread stopped".to_string())?
             }
             Backend::Tauri(registered) => {
                 if let Some(shortcut) = registered.lock().unwrap().remove(id) {
@@ -315,18 +317,17 @@ pub fn start_capture(app: &AppHandle) -> Result<(), String> {
     let app = app.clone();
     thread::spawn(move || {
         while running.load(Ordering::SeqCst) {
-            let event = listener
-                .lock()
-                .unwrap()
-                .as_ref()
-                .and_then(|l| l.try_recv());
+            let event = listener.lock().unwrap().as_ref().and_then(|l| l.try_recv());
             match event {
                 Some(e) => {
                     let _ = ShortcutCaptureEvent {
                         modifiers: modifier_names(e.modifiers),
                         key: e.key.map(|k| k.to_string().to_lowercase()),
                         is_key_down: e.is_key_down,
-                        hotkey_string: e.as_hotkey().map(|h| h.to_handy_string()).unwrap_or_default(),
+                        hotkey_string: e
+                            .as_hotkey()
+                            .map(|h| h.to_handy_string())
+                            .unwrap_or_default(),
                     }
                     .emit(&app);
                 }

@@ -3,10 +3,10 @@
 //! (case-sensitive only when Clean and Reformat is on) → Clean and Reformat
 //! (if on) → output for paste and history.
 
-use crate::{cleanup, context};
 use crate::settings::get_settings;
 use crate::text::{dictionary, filler};
 use crate::transcription::Transcription;
+use crate::{cleanup, context};
 use tauri::AppHandle;
 
 #[derive(Debug, Clone)]
@@ -33,7 +33,11 @@ pub fn process_local(
 }
 
 /// `None` when the session was cancelled mid-pipeline.
-pub fn process(app: &AppHandle, session: u64, transcription: &Transcription) -> Option<PipelineOutput> {
+pub fn process(
+    app: &AppHandle,
+    session: u64,
+    transcription: &Transcription,
+) -> Option<PipelineOutput> {
     let settings = get_settings(app);
     let context = context::current();
     let (local_text, inserted) = process_local(
@@ -75,7 +79,11 @@ pub fn process(app: &AppHandle, session: u64, transcription: &Transcription) -> 
                 let (text, used) = cleanup::choose_output(groq, &local_text, &inserted);
                 log::info!(
                     "Groq cleanup {} in {:.2}s",
-                    if used { "applied" } else { "skipped (local text kept)" },
+                    if used {
+                        "applied"
+                    } else {
+                        "skipped (local text kept)"
+                    },
                     started.elapsed().as_secs_f32()
                 );
                 final_text = text;

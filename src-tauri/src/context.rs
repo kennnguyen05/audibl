@@ -24,7 +24,10 @@ pub fn capture(_app: &AppHandle) {
         "Context: app={:?} bundle={:?} title_chars={}",
         context.app_name,
         context.bundle_id,
-        context.window_title.as_ref().map_or(0, |t| t.chars().count())
+        context
+            .window_title
+            .as_ref()
+            .map_or(0, |t| t.chars().count())
     );
     *LAST.lock().unwrap() = Some(context);
 }
@@ -74,8 +77,17 @@ unsafe extern "C" {
 
 #[link(name = "CoreFoundation", kind = "framework")]
 unsafe extern "C" {
-    fn CFStringCreateWithCString(alloc: CFTypeRef, c_str: *const c_char, encoding: u32) -> CFTypeRef;
-    fn CFStringGetCString(string: CFTypeRef, buffer: *mut c_char, size: isize, encoding: u32) -> bool;
+    fn CFStringCreateWithCString(
+        alloc: CFTypeRef,
+        c_str: *const c_char,
+        encoding: u32,
+    ) -> CFTypeRef;
+    fn CFStringGetCString(
+        string: CFTypeRef,
+        buffer: *mut c_char,
+        size: isize,
+        encoding: u32,
+    ) -> bool;
     fn CFGetTypeID(cf: CFTypeRef) -> usize;
     fn CFStringGetTypeID() -> usize;
     fn CFRelease(cf: CFTypeRef);
@@ -109,8 +121,13 @@ fn to_string(value: &Owned) -> Option<String> {
         return None;
     }
     let mut buffer = vec![0 as c_char; 2048];
-    let ok = unsafe { CFStringGetCString(value.0, buffer.as_mut_ptr(), buffer.len() as isize, UTF8) };
-    ok.then(|| unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_string_lossy().into_owned())
+    let ok =
+        unsafe { CFStringGetCString(value.0, buffer.as_mut_ptr(), buffer.len() as isize, UTF8) };
+    ok.then(|| {
+        unsafe { CStr::from_ptr(buffer.as_ptr()) }
+            .to_string_lossy()
+            .into_owned()
+    })
 }
 
 /// Needs the Accessibility permission Audible already requires for paste.

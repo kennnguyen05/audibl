@@ -2,11 +2,11 @@
 //! `src/bindings.ts` through tauri-specta. Setting commands return the full
 //! updated settings so the frontend store stays in sync.
 
-use crate::settings::{
-    get_settings, normalize_custom_words, normalize_replacements, update_settings,
-    ActivationMode, AppLanguage, AppSettings, Replacement,
-};
 use crate::model::{ModelManager, ModelStatus};
+use crate::settings::{
+    get_settings, normalize_custom_words, normalize_replacements, update_settings, ActivationMode,
+    AppLanguage, AppSettings, Replacement,
+};
 use crate::{audio, autostart, keychain, tray};
 use tauri::{AppHandle, Manager};
 

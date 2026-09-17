@@ -61,7 +61,9 @@ fn main() {
         std::process::exit(2);
     }
     let clips_dir = PathBuf::from(&args[1]);
-    let models: Vec<&String> = std::iter::once(&args[0]).chain(args.iter().skip(2)).collect();
+    let models: Vec<&String> = std::iter::once(&args[0])
+        .chain(args.iter().skip(2))
+        .collect();
 
     let mut clips: Vec<PathBuf> = std::fs::read_dir(&clips_dir)
         .expect("read clips dir")

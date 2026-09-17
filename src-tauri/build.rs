@@ -71,13 +71,15 @@ fn generate_tray_translations() {
 }
 
 fn camel_to_snake(s: &str) -> String {
-    s.chars().enumerate().fold(String::new(), |mut acc, (i, c)| {
-        if c.is_uppercase() && i > 0 {
-            acc.push('_');
-        }
-        acc.push(c.to_lowercase().next().unwrap());
-        acc
-    })
+    s.chars()
+        .enumerate()
+        .fold(String::new(), |mut acc, (i, c)| {
+            if c.is_uppercase() && i > 0 {
+                acc.push('_');
+            }
+            acc.push(c.to_lowercase().next().unwrap());
+            acc
+        })
 }
 
 fn escape_string(s: &str) -> String {

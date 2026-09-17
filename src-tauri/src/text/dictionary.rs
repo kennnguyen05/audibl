@@ -207,7 +207,10 @@ mod tests {
 
     #[test]
     fn short_keys_are_never_fuzzy_matched() {
-        assert_eq!(apply_custom_words("the cat sat", &words(&["Cab"])), "the cat sat");
+        assert_eq!(
+            apply_custom_words("the cat sat", &words(&["Cab"])),
+            "the cat sat"
+        );
     }
 
     #[test]

@@ -122,7 +122,11 @@ impl TranscriptionManager {
     fn spawn_idle_watcher(manager: std::sync::Weak<Self>) {
         thread::spawn(move || {
             let limit = unload_after();
-            let tick = Duration::from_secs(if limit < Duration::from_secs(60) { 1 } else { 10 });
+            let tick = Duration::from_secs(if limit < Duration::from_secs(60) {
+                1
+            } else {
+                10
+            });
             loop {
                 thread::sleep(tick);
                 let Some(manager) = manager.upgrade() else {
@@ -136,7 +140,8 @@ impl TranscriptionManager {
                     manager.touch();
                     continue;
                 }
-                let idle_ms = now_ms().saturating_sub(manager.last_activity_ms.load(Ordering::Relaxed));
+                let idle_ms =
+                    now_ms().saturating_sub(manager.last_activity_ms.load(Ordering::Relaxed));
                 if idle_ms > limit.as_millis() as u64 && manager.is_loaded() {
                     // try_lock: a running transcription holds the lock and
                     // is activity, so never block or unload under it.
