@@ -78,6 +78,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::set_groq_api_key,
             commands::has_groq_api_key,
             commands::clear_groq_api_key,
+            commands::open_groq_keys_page,
             commands::get_microphones,
             commands::set_microphone,
             commands::get_channel_count,

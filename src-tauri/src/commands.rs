@@ -112,6 +112,24 @@ pub fn has_groq_api_key() -> bool {
     keychain::has_groq_api_key()
 }
 
+/// Opens the fixed Groq API keys page in the default browser. Takes no
+/// frontend-supplied URL, so there's nothing here for the UI to redirect.
+#[tauri::command]
+#[specta::specta]
+pub fn open_groq_keys_page() -> Result<(), String> {
+    std::process::Command::new("/usr/bin/open")
+        .arg("https://console.groq.com/keys")
+        .status()
+        .map_err(|e| e.to_string())
+        .and_then(|status| {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("open exited with {status}"))
+            }
+        })
+}
+
 /// Microphone names; cpal enumeration can stall, so it runs off the main thread.
 #[tauri::command]
 #[specta::specta]

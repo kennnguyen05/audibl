@@ -77,6 +77,18 @@ async clearGroqApiKey() : Promise<Result<AppSettings, string>> {
 }
 },
 /**
+ * Opens the fixed Groq API keys page in the default browser. Takes no
+ * frontend-supplied URL, so there's nothing here for the UI to redirect.
+ */
+async openGroqKeysPage() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("open_groq_keys_page") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Microphone names; cpal enumeration can stall, so it runs off the main thread.
  */
 async getMicrophones() : Promise<Result<string[], string>> {
