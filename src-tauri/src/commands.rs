@@ -6,8 +6,9 @@ use crate::settings::{
     get_settings, normalize_custom_words, normalize_replacements, update_settings,
     ActivationMode, AppLanguage, AppSettings, Replacement,
 };
-use crate::{autostart, keychain, tray};
-use tauri::AppHandle;
+use crate::model::{ModelManager, ModelStatus};
+use crate::{audio, autostart, keychain, tray};
+use tauri::{AppHandle, Manager};
 
 #[tauri::command]
 #[specta::specta]
@@ -101,6 +102,82 @@ pub fn set_groq_api_key(key: String) -> Result<(), String> {
 #[specta::specta]
 pub fn has_groq_api_key() -> bool {
     keychain::has_groq_api_key()
+}
+
+/// Microphone names; cpal enumeration can stall, so it runs off the main thread.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_microphones() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        audio::devices::list_input_devices()
+            .map(|devices| devices.into_iter().map(|d| d.name).collect())
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// `None` follows the system default. Changing the microphone resets the channel.
+#[tauri::command]
+#[specta::specta]
+pub fn set_microphone(app: AppHandle, name: Option<String>) -> AppSettings {
+    update_settings(&app, |s| {
+        s.selected_microphone = name;
+        s.selected_channel = None;
+    })
+}
+
+/// Input channel count of the selected (or default) microphone.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_channel_count(app: AppHandle) -> Result<u16, String> {
+    let name = get_settings(&app).selected_microphone;
+    tauri::async_runtime::spawn_blocking(move || {
+        match audio::devices::find_input_device(name.as_deref()) {
+            Some(device) => {
+                audio::recorder::input_channel_count(&device).map_err(|e| e.to_string())
+            }
+            None => Ok(1),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_channel(app: AppHandle, channel: Option<u16>) -> AppSettings {
+    update_settings(&app, |s| s.selected_channel = channel)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_model_status(app: AppHandle) -> ModelStatus {
+    app.state::<ModelManager>().status(&app)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn start_model_download(app: AppHandle) {
+    app.state::<ModelManager>().start_download(&app);
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_model_download(app: AppHandle) {
+    app.state::<ModelManager>().cancel_download();
+}
+
+/// Finishes onboarding once the model is on disk.
+#[tauri::command]
+#[specta::specta]
+pub fn complete_onboarding(app: AppHandle) -> Result<AppSettings, String> {
+    if !app.state::<ModelManager>().is_ready(&app) {
+        return Err("model_missing".into());
+    }
+    let settings = update_settings(&app, |s| s.onboarding_complete = true);
+    crate::on_ready(&app);
+    Ok(settings)
 }
 
 /// Removing the key also turns Clean and Reformat off.

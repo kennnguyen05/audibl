@@ -1,9 +1,13 @@
 mod actions;
+mod audio;
 mod autostart;
 mod commands;
 mod history;
 mod keychain;
+mod model;
+mod permissions;
 mod settings;
+mod transcription;
 mod tray;
 mod tray_i18n;
 
@@ -27,6 +31,20 @@ pub fn show_main_window(app: &AppHandle) {
     }
 }
 
+/// True when dictation can run: onboarding done, permissions granted, and
+/// the model on disk. Otherwise the main window must show onboarding.
+fn is_setup_complete(app: &AppHandle) -> bool {
+    get_settings(app).onboarding_complete
+        && permissions::has_microphone()
+        && permissions::has_accessibility()
+        && app.state::<model::ModelManager>().is_ready(app)
+}
+
+/// Runs once setup is complete: at launch, or when onboarding finishes.
+pub fn on_ready(_app: &AppHandle) {
+    log::info!("Setup complete; dictation ready");
+}
+
 fn specta_builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         .commands(collect_commands![
@@ -45,8 +63,21 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::set_groq_api_key,
             commands::has_groq_api_key,
             commands::clear_groq_api_key,
+            commands::get_microphones,
+            commands::set_microphone,
+            commands::get_channel_count,
+            commands::set_channel,
+            commands::get_model_status,
+            commands::start_model_download,
+            commands::cancel_model_download,
+            commands::complete_onboarding,
         ])
-        .events(collect_events![settings::SettingsChanged])
+        .events(collect_events![
+            settings::SettingsChanged,
+            model::ModelDownloadProgress,
+            model::ModelDownloadFailed,
+            model::ModelDownloadComplete,
+        ])
 }
 
 pub fn run() {
@@ -90,6 +121,10 @@ pub fn run() {
         .setup(move |app| {
             specta_builder.mount_events(app);
             let handle = app.handle().clone();
+            app.manage(model::ModelManager::default());
+            app.manage(audio::AudioManager::new(&handle));
+            transcription::TranscriptionManager::init_backend();
+            app.manage(transcription::TranscriptionManager::new(&handle));
 
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                 .title("Audible")
@@ -103,8 +138,12 @@ pub fn run() {
             let settings = get_settings(&handle);
             autostart::apply_autostart(settings.autostart_enabled);
 
-            let must_show = !settings.onboarding_complete;
-            if must_show || !settings.effective_start_hidden() {
+            if is_setup_complete(&handle) {
+                on_ready(&handle);
+                if !settings.effective_start_hidden() {
+                    show_main_window(&handle);
+                }
+            } else {
                 show_main_window(&handle);
             }
             Ok(())
@@ -139,8 +178,8 @@ pub fn run() {
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
 
-    app.run(|app, event| {
-        if let tauri::RunEvent::Reopen { .. } = event {
+    app.run(|app, event| match event {
+        tauri::RunEvent::Reopen { .. } => {
             let visible = app
                 .get_webview_window("main")
                 .and_then(|w| w.is_visible().ok())
@@ -150,6 +189,14 @@ pub fn run() {
             }
             show_main_window(app);
         }
+        // ggml-metal asserts if a model's Metal resources outlive static
+        // destructors, so drop the engine before exit.
+        tauri::RunEvent::Exit => {
+            if let Some(tm) = app.try_state::<std::sync::Arc<transcription::TranscriptionManager>>() {
+                tm.unload();
+            }
+        }
+        _ => {}
     });
 }
 

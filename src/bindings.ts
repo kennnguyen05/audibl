@@ -70,6 +70,57 @@ async clearGroqApiKey() : Promise<Result<AppSettings, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Microphone names; cpal enumeration can stall, so it runs off the main thread.
+ */
+async getMicrophones() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_microphones") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * `None` follows the system default. Changing the microphone resets the channel.
+ */
+async setMicrophone(name: string | null) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_microphone", { name });
+},
+/**
+ * Input channel count of the selected (or default) microphone.
+ */
+async getChannelCount() : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_channel_count") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setChannel(channel: number | null) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_channel", { channel });
+},
+async getModelStatus() : Promise<ModelStatus> {
+    return await TAURI_INVOKE("get_model_status");
+},
+async startModelDownload() : Promise<void> {
+    await TAURI_INVOKE("start_model_download");
+},
+async cancelModelDownload() : Promise<void> {
+    await TAURI_INVOKE("cancel_model_download");
+},
+/**
+ * Finishes onboarding once the model is on disk.
+ */
+async completeOnboarding() : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("complete_onboarding") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -77,8 +128,14 @@ async clearGroqApiKey() : Promise<Result<AppSettings, string>> {
 
 
 export const events = __makeEvents__<{
+modelDownloadComplete: ModelDownloadComplete,
+modelDownloadFailed: ModelDownloadFailed,
+modelDownloadProgress: ModelDownloadProgress,
 settingsChanged: SettingsChanged
 }>({
+modelDownloadComplete: "model-download-complete",
+modelDownloadFailed: "model-download-failed",
+modelDownloadProgress: "model-download-progress",
 settingsChanged: "settings-changed"
 })
 
@@ -99,6 +156,14 @@ selected_microphone: string | null;
  * Zero-based input channel; `None` mixes all channels down to mono.
  */
 selected_channel: number | null; mute_while_recording: boolean; start_hidden: boolean; autostart_enabled: boolean; show_tray_icon: boolean; remove_filler_words: boolean; app_language: AppLanguage; clean_and_reformat: boolean; custom_words: string[]; replacements: Replacement[] }
+export type ModelDownloadComplete = null
+/**
+ * `reason` is a code the frontend translates: `network`, `stalled`,
+ * `checksum`, `disk_space`, `server`, `io`.
+ */
+export type ModelDownloadFailed = { reason: string }
+export type ModelDownloadProgress = { downloaded: number; total: number; verifying: boolean }
+export type ModelStatus = { state: "missing" } | { state: "partial"; downloaded: number; total: number } | { state: "downloading"; downloaded: number; total: number } | { state: "verifying" } | { state: "ready" }
 export type Replacement = { trigger: string; value: string }
 /**
  * Emitted with the full settings after every change. The overlay webview

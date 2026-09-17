@@ -13,6 +13,11 @@
     "toggle": "Bật/tắt",
     "toggleCaption": "Esc để huỷ · Return để hoàn tất",
     "soundGroup": "Âm thanh",
+    "microphone": "Micro",
+    "defaultMicrophone": "Mặc định của hệ thống",
+    "channel": "Kênh",
+    "allChannels": "Tất cả các kênh",
+    "channelNumber": "Kênh {{number}}",
     "muteWhileRecording": "Tắt tiếng khi ghi âm"
   },
   "dictionary": {
@@ -51,6 +56,39 @@
     "remove": "Xoá",
     "keySaveFailed": "Không lưu được khoá vào Keychain.",
     "keyRemoveFailed": "Không xoá được khoá khỏi Keychain."
+  },
+  "onboarding": {
+    "stepOf": "Bước {{step}}/{{total}}",
+    "granted": "Đã cấp quyền",
+    "continue": "Tiếp tục",
+    "finish": "Hoàn tất",
+    "microphone": {
+      "title": "Cho phép truy cập micro",
+      "body": "Audible chỉ nghe khi bạn giữ hoặc bật phím tắt. Giọng nói được chép lời ngay trên máy Mac này.",
+      "action": "Cho phép micro"
+    },
+    "accessibility": {
+      "title": "Cho phép quyền Trợ năng",
+      "body": "Audible cần quyền Trợ năng để nhận phím tắt từ mọi ứng dụng và dán văn bản vào chỗ bạn đang gõ. Bật Audible trong Cài đặt hệ thống › Quyền riêng tư & Bảo mật › Trợ năng.",
+      "action": "Mở cài đặt Trợ năng"
+    },
+    "model": {
+      "title": "Tải mô hình giọng nói",
+      "body": "Audible cần một mô hình giọng nói dung lượng {{size}}. Chỉ tải một lần, sau đó chạy hoàn toàn ngoại tuyến.",
+      "download": "Tải xuống",
+      "resume": "Tiếp tục tải",
+      "retry": "Thử lại",
+      "verifying": "Đang kiểm tra…",
+      "progress": "{{downloaded}} MB / {{total}} MB · {{percent}}%",
+      "errors": {
+        "network": "Quá trình tải bị gián đoạn. Kiểm tra kết nối rồi thử lại; việc tải sẽ tiếp tục từ chỗ đã dừng.",
+        "stalled": "Quá trình tải không nhận thêm dữ liệu. Thử lại để tải tiếp.",
+        "checksum": "Tệp tải về bị hỏng. Thử lại để tải lại từ đầu.",
+        "disk_space": "Không đủ dung lượng ổ đĩa. Giải phóng khoảng 2 GB rồi thử lại.",
+        "server": "Máy chủ tải xuống báo lỗi. Hãy thử lại sau.",
+        "io": "Không lưu được mô hình. Hãy thử lại."
+      }
+    }
   },
   "tray": {
     "open": "Mở Audible",

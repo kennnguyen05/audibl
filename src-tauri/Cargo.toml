@@ -14,6 +14,18 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [profile.dev]
 incremental = true
 
+# Debug builds of these are too slow to use: transcribe-cpp's C++ (cmake picks
+# RelWithDebInfo from opt-level 3), sha256 over the 1.5 GB model, and the
+# resampler FFT.
+[profile.dev.package.transcribe-cpp-sys]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.rubato]
+opt-level = 3
+[profile.dev.package.rustfft]
+opt-level = 3
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 serde_json = "1"
@@ -39,9 +51,25 @@ objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
 keyring = { version = "3.6", features = ["apple-native"] }
 security-framework = "3"
+anyhow = "1.0.95"
+cpal = "0.16.0"
+rtrb = "0.4.0"
+rubato = "0.16.2"
+rustfft = "6.4.0"
+vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
+transcribe-cpp = { version = "0.2.3", default-features = false, features = ["metal"] }
+whatlang = "0.16"
+reqwest = { version = "0.12", features = ["stream"] }
+futures-util = "0.3"
+sha2 = "0.10"
+tokio = { version = "1.43.0", features = ["macros", "time", "rt"] }
+tokio-util = "0.7"
+libc = "0.2"
 
 [dev-dependencies]
 tempfile = "3"
+hound = "3.5.1"
+tokio = { version = "1.43.0", features = ["macros", "net", "io-util", "time", "rt-multi-thread"] }
 
 [profile.release]
 lto = true

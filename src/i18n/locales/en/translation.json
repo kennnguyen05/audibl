@@ -13,6 +13,11 @@
     "toggle": "Toggle",
     "toggleCaption": "Esc cancels · Return finishes",
     "soundGroup": "Sound",
+    "microphone": "Microphone",
+    "defaultMicrophone": "System Default",
+    "channel": "Channel",
+    "allChannels": "All Channels",
+    "channelNumber": "Channel {{number}}",
     "muteWhileRecording": "Mute While Recording"
   },
   "dictionary": {
@@ -51,6 +56,39 @@
     "remove": "Remove",
     "keySaveFailed": "Couldn't save the key to the Keychain.",
     "keyRemoveFailed": "Couldn't remove the key from the Keychain."
+  },
+  "onboarding": {
+    "stepOf": "Step {{step}} of {{total}}",
+    "granted": "Granted",
+    "continue": "Continue",
+    "finish": "Finish",
+    "microphone": {
+      "title": "Allow microphone access",
+      "body": "Audible listens only while you hold or toggle your shortcut. Your voice is transcribed on this Mac.",
+      "action": "Allow Microphone"
+    },
+    "accessibility": {
+      "title": "Allow Accessibility access",
+      "body": "Audible needs Accessibility to detect your shortcut from any app and to paste the text where you are typing. Turn on Audible in System Settings › Privacy & Security › Accessibility.",
+      "action": "Open Accessibility Settings"
+    },
+    "model": {
+      "title": "Download speech model",
+      "body": "Audible needs a {{size}} speech model. It downloads once and then runs fully offline.",
+      "download": "Download",
+      "resume": "Resume Download",
+      "retry": "Retry",
+      "verifying": "Verifying…",
+      "progress": "{{downloaded}} MB of {{total}} MB · {{percent}}%",
+      "errors": {
+        "network": "The download was interrupted. Check your connection and retry; it will resume where it stopped.",
+        "stalled": "The download stopped receiving data. Retry to resume.",
+        "checksum": "The downloaded file was damaged. Retry to download it again.",
+        "disk_space": "Not enough disk space. Free up about 2 GB and retry.",
+        "server": "The download server returned an error. Try again later.",
+        "io": "The model couldn't be saved. Retry."
+      }
+    }
   },
   "tray": {
     "open": "Open Audible",
