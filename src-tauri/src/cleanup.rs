@@ -2,7 +2,8 @@
 //!
 //! It removes fillers, stutters, false starts, and self-corrections, and
 //! formats for the app in use. Any failure (no key, network, timeout, empty
-//! output, a replacement value lost or re-cased) falls back to the local text.
+//! output, a replacement value lost or re-cased, mixed-language words
+//! translated) falls back to the local text.
 
 use crate::context::AppContext;
 use serde::Serialize;
@@ -26,7 +27,8 @@ Rules:
   - email reply or compose: add a greeting or sign-off only if it was spoken;
   - docs or notes: headings, lists, and paragraphs are allowed;
   - code editor or terminal: minimal changes, no added prose.
-- Keep the spoken language or languages. Never translate. Keep Vietnamese diacritics and English terms used inside Vietnamese speech.
+- `language` is only the dominant detected language; the transcript may mix Vietnamese and English, even within one sentence.
+- Never translate any word, in either direction. Every English word spoken inside Vietnamese stays English, and every Vietnamese word spoken inside English stays Vietnamese, in the same position (\"em gửi cái file report cho anh nhé\" → \"Em gửi cái file report cho anh nhé.\", not \"tệp báo cáo\"). Keep Vietnamese diacritics. Do not swap words for synonyms or change regional or casual particles (keep \"nha\", \"hông\", \"vậy đó\" as spoken).
 - Preserve meaning, names, numbers, emails, and URLs exactly.
 - Every string in keep_verbatim must appear in the output exactly, with the same characters and casing.
 - Fix words the speech recognizer misheard when the context makes the intended word clear.
@@ -103,14 +105,48 @@ pub fn sanitize_response(raw: &str) -> String {
     unquoted.trim().to_string()
 }
 
-/// Groq's output only wins when it is non-empty and keeps every inserted
-/// replacement value exactly (case-sensitive substring).
+fn word_set(text: &str) -> std::collections::HashSet<String> {
+    text.split(|c: char| !c.is_alphanumeric())
+        .filter(|w| !w.is_empty())
+        .map(str::to_lowercase)
+        .collect()
+}
+
+/// Detects translation of mixed-language speech. When the local text holds
+/// both Vietnamese words (non-ASCII letters) and common English words, Groq
+/// must keep at least half of each group; a word may still be dropped as a
+/// filler or false start, but losing most of one language means translation.
+pub fn translated_mixed_words(local: &str, groq: &str) -> bool {
+    let words = word_set(local);
+    let vietnamese: Vec<&String> = words.iter().filter(|w| !w.is_ascii()).collect();
+    let english: Vec<&String> = words
+        .iter()
+        .filter(|w| w.is_ascii() && crate::text::dictionary::is_common_english(w))
+        .collect();
+    if vietnamese.is_empty() || english.is_empty() {
+        return false;
+    }
+    let output = word_set(groq);
+    let mostly_lost = |group: &[&String]| {
+        let kept = group.iter().filter(|w| output.contains(w.as_str())).count();
+        kept * 2 < group.len()
+    };
+    mostly_lost(&english) || mostly_lost(&vietnamese)
+}
+
+/// Groq's output only wins when it is non-empty, keeps every inserted
+/// replacement value exactly (case-sensitive substring), and did not translate
+/// mixed-language words.
 pub fn choose_output(
     groq: Option<String>,
     local: &str,
     keep_verbatim: &[String],
 ) -> (String, bool) {
     match groq {
+        Some(text) if !text.is_empty() && translated_mixed_words(local, &text) => {
+            log::warn!("Groq output translated mixed-language words; using local text");
+            (local.to_string(), false)
+        }
         Some(text)
             if !text.is_empty() && keep_verbatim.iter().all(|v| text.contains(v.as_str())) =>
         {
@@ -285,6 +321,35 @@ mod tests {
         );
     }
 
+    #[test]
+    fn mixed_language_translation_is_detected() {
+        let local = "em gửi cái file report cho anh nhé";
+        assert!(!translated_mixed_words(
+            local,
+            "Em gửi cái file report cho anh nhé."
+        ));
+        assert!(translated_mixed_words(
+            local,
+            "Em gửi cái tệp báo cáo cho anh nhé."
+        ));
+        assert!(translated_mixed_words(
+            "the meeting is xong rồi",
+            "The meeting is done."
+        ));
+        let (text, used) = choose_output(
+            Some("Em gửi cái tệp báo cáo cho anh nhé.".into()),
+            local,
+            &[],
+        );
+        assert_eq!((text.as_str(), used), (local, false));
+    }
+
+    #[test]
+    fn single_language_text_is_never_flagged() {
+        assert!(!translated_mixed_words("send the report", "Send it."));
+        assert!(!translated_mixed_words("chào chị", "Hello."));
+    }
+
     /// `cargo test groq_live -- --ignored --nocapture` with GROQ_API_KEY set.
     #[test]
     #[ignore]
@@ -310,6 +375,16 @@ mod tests {
                 },
                 "vi",
                 "chào chị em gửi chị báo cáo tuần này nhé nếu có gì cần sửa chị báo em ạ cảm ơn chị",
+                vec![],
+            ),
+            (
+                AppContext {
+                    app_name: Some("Slack".into()),
+                    bundle_id: Some("com.tinyspeck.slackmacgap".into()),
+                    window_title: None,
+                },
+                "vi",
+                "ờ anh ơi cái deadline của project này là thứ sáu nha em sẽ update cái slide rồi gửi meeting note cho team",
                 vec![],
             ),
         ];

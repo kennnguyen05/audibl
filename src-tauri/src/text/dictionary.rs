@@ -36,6 +36,11 @@ fn common_words_en() -> &'static HashSet<&'static str> {
     SET.get_or_init(|| COMMON_WORDS_EN.lines().filter(|l| !l.is_empty()).collect())
 }
 
+/// Whether a lowercase word is in the embedded common English word list.
+pub fn is_common_english(word: &str) -> bool {
+    common_words_en().contains(word)
+}
+
 /// Whether a single word (its `match_key`) must be left alone when it matches
 /// a custom word at `ratio`: a common English word is never changed, not even
 /// recased; a word with non-ASCII letters (a Vietnamese syllable, which ASR
