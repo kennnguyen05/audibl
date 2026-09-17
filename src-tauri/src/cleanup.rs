@@ -18,6 +18,11 @@ pub const TIMEOUT: Duration = Duration::from_secs(10);
 pub const SYSTEM_PROMPT: &str = "\
 You clean up dictated text. The user message is JSON: app, bundle_id, window_title, language, dictionary, keep_verbatim, transcript. Rewrite `transcript` and output only the final text.
 
+Mixed languages (highest priority, overrides every rule below):
+- The speaker mixes Vietnamese and English on purpose (code-switching). `language` is only the dominant detected language.
+- Every English word stays in English and every Vietnamese word stays in Vietnamese, in the same place. Never translate a word or phrase in either direction, even when the context is formal or a native equivalent exists. Wrong: \"customer\" → \"khách hàng\", \"support\" → \"hỗ trợ\", \"change\" → \"thay đổi\", \"outdated profiles\" → \"hồ sơ lỗi thời\". Right: \"những cái customer nước ngoài\" → \"những customer nước ngoài\".
+- Keep Vietnamese diacritics and casual particles as spoken (\"nha\", \"hông\", \"đó\").
+
 Rules:
 - Remove filler words, stutters, false starts, and self-corrections (\"no wait, I mean…\"); keep what the speaker finally meant.
 - Fix punctuation, capitalization, and paragraphing.
@@ -27,8 +32,7 @@ Rules:
   - email reply or compose: add a greeting or sign-off only if it was spoken;
   - docs or notes: headings, lists, and paragraphs are allowed;
   - code editor or terminal: minimal changes, no added prose.
-- `language` is only the dominant detected language; the transcript may mix Vietnamese and English, even within one sentence.
-- Never translate any word, in either direction. Every English word spoken inside Vietnamese stays English, and every Vietnamese word spoken inside English stays Vietnamese, in the same position (\"em gửi cái file report cho anh nhé\" → \"Em gửi cái file report cho anh nhé.\", not \"tệp báo cáo\"). Keep Vietnamese diacritics. Do not swap words for synonyms or change regional or casual particles (keep \"nha\", \"hông\", \"vậy đó\" as spoken).
+- Keep the speaker's own words. Do not paraphrase or swap words for synonyms; context changes formatting and punctuation, not vocabulary.
 - Preserve meaning, names, numbers, emails, and URLs exactly.
 - Every string in keep_verbatim must appear in the output exactly, with the same characters and casing.
 - Fix words the speech recognizer misheard when the context makes the intended word clear.
@@ -112,26 +116,25 @@ fn word_set(text: &str) -> std::collections::HashSet<String> {
         .collect()
 }
 
-/// Detects translation of mixed-language speech. When the local text holds
-/// both Vietnamese words (non-ASCII letters) and common English words, Groq
-/// must keep at least half of each group; a word may still be dropped as a
-/// filler or false start, but losing most of one language means translation.
+fn is_english(word: &str) -> bool {
+    word.is_ascii() && crate::text::dictionary::is_common_english(word)
+}
+
+fn is_vietnamese(word: &str) -> bool {
+    !word.is_ascii()
+}
+
+/// Detects a word translated between Vietnamese and English: Groq dropped a
+/// word of one language and added a word of the other that the local text did
+/// not have. Dropping a filler or false start alone never adds a word from the
+/// other language, so it is not flagged. Even one translated word ("support"
+/// → "hỗ trợ") rejects the output.
 pub fn translated_mixed_words(local: &str, groq: &str) -> bool {
-    let words = word_set(local);
-    let vietnamese: Vec<&String> = words.iter().filter(|w| !w.is_ascii()).collect();
-    let english: Vec<&String> = words
-        .iter()
-        .filter(|w| w.is_ascii() && crate::text::dictionary::is_common_english(w))
-        .collect();
-    if vietnamese.is_empty() || english.is_empty() {
-        return false;
-    }
-    let output = word_set(groq);
-    let mostly_lost = |group: &[&String]| {
-        let kept = group.iter().filter(|w| output.contains(w.as_str())).count();
-        kept * 2 < group.len()
-    };
-    mostly_lost(&english) || mostly_lost(&vietnamese)
+    let before = word_set(local);
+    let after = word_set(groq);
+    let lost = |is_lang: fn(&str) -> bool| before.iter().any(|w| is_lang(w) && !after.contains(w));
+    let added = |is_lang: fn(&str) -> bool| after.iter().any(|w| is_lang(w) && !before.contains(w));
+    (lost(is_english) && added(is_vietnamese)) || (lost(is_vietnamese) && added(is_english))
 }
 
 /// Groq's output only wins when it is non-empty, keeps every inserted
@@ -336,6 +339,16 @@ mod tests {
             "the meeting is xong rồi",
             "The meeting is done."
         ));
+        // Ken's case: "slide deck" kept, only "customer" and "support" translated.
+        let ken = "OK, anh muốn em bổ sung cái slide deck trước thứ sáu nha. Tại vì sẽ có những sẽ có nhiều những cái customer nước ngoài người ta tới và người ta rất là cần những cái support của bên mình đó.";
+        assert!(translated_mixed_words(
+            ken,
+            "OK, anh muốn em bổ sung cái slide deck trước thứ sáu nhé. Vì sẽ có nhiều khách hàng nước ngoài tới và họ rất cần sự hỗ trợ của bên mình."
+        ));
+        assert!(!translated_mixed_words(
+            ken,
+            "OK, anh muốn em bổ sung cái slide deck trước thứ sáu nha. Tại vì sẽ có nhiều customer nước ngoài tới và người ta rất cần support của bên mình đó."
+        ));
         let (text, used) = choose_output(
             Some("Em gửi cái tệp báo cáo cho anh nhé.".into()),
             local,
@@ -345,9 +358,12 @@ mod tests {
     }
 
     #[test]
-    fn single_language_text_is_never_flagged() {
+    fn dropping_words_without_translation_is_not_flagged() {
         assert!(!translated_mixed_words("send the report", "Send it."));
-        assert!(!translated_mixed_words("chào chị", "Hello."));
+        assert!(!translated_mixed_words(
+            "ờ em gửi file nha",
+            "Em gửi file nha."
+        ));
     }
 
     /// `cargo test groq_live -- --ignored --nocapture` with GROQ_API_KEY set.
@@ -432,6 +448,56 @@ mod tests {
         assert!(output.contains("ChargeBee"));
         // Best effort only: the local step no longer produces this.
         run("check to see if the spelling is Wright");
+    }
+
+    fn english_words_lost(local: &str, output: &str) -> Vec<String> {
+        let out = word_set(output);
+        word_set(local)
+            .into_iter()
+            .filter(|w| crate::text::dictionary::is_common_english(w) && !out.contains(w))
+            .collect()
+    }
+
+    /// Ken's report: "support" came back as "hỗ trợ".
+    #[test]
+    #[ignore]
+    fn groq_live_mixed_language_not_translated() {
+        let key = std::env::var("GROQ_API_KEY").expect("GROQ_API_KEY");
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let ctx = AppContext {
+            app_name: Some("Notes".into()),
+            bundle_id: Some("com.apple.Notes".into()),
+            window_title: None,
+        };
+        let transcripts = [
+            "OK, anh muốn em bổ sung cái slide deck trước thứ sáu nha. Tại vì sẽ có những sẽ có nhiều những cái customer nước ngoài người ta tới và người ta rất là cần những cái support của bên mình đó.",
+            "Okay. Một trong những cái change mà mình phải make đó chính là trong cái product assessment nó có rất là nhiều những cái outdated profiles. Thì việc đầu tiên của mình là phải sửa nó.",
+        ];
+        let runs: usize = std::env::var("RUNS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1);
+        let mut translated = 0;
+        for transcript in transcripts {
+            let mut guard_missed = 0;
+            for _ in 0..runs {
+                let input = CleanupInput::new(&ctx, "vi", &[], &[], transcript);
+                let Some(output) = runtime.block_on(request(&key, &input)) else {
+                    continue;
+                };
+                let (_, used) = choose_output(Some(output.clone()), transcript, &[]);
+                let lost = english_words_lost(transcript, &output);
+                println!("{output:?} used={used} lost={lost:?}");
+                if !lost.is_empty() {
+                    translated += 1;
+                    if used {
+                        guard_missed += 1;
+                    }
+                }
+            }
+            assert_eq!(guard_missed, 0, "guard missed a translation");
+        }
+        println!("translated {translated}/{}", runs * transcripts.len());
     }
 
     #[test]
