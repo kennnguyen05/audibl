@@ -5,9 +5,56 @@
     "history": "Lịch sử",
     "advanced": "Nâng cao"
   },
+  "general": {
+    "shortcutGroup": "Phím tắt",
+    "transcribeShortcut": "Phím tắt chép lời",
+    "activationMode": "Chế độ",
+    "hold": "Giữ",
+    "toggle": "Bật/tắt",
+    "toggleCaption": "Esc để huỷ · Return để hoàn tất",
+    "soundGroup": "Âm thanh",
+    "muteWhileRecording": "Tắt tiếng khi ghi âm"
+  },
+  "dictionary": {
+    "customWords": "Từ tuỳ chỉnh",
+    "wordPlaceholder": "Thêm từ hoặc tên riêng",
+    "replacements": "Thay thế",
+    "triggerPlaceholder": "Khi tôi nói",
+    "valuePlaceholder": "Chèn",
+    "add": "Thêm",
+    "remove": "Xoá"
+  },
+  "history": {
+    "empty": "Chưa có bản chép lời nào."
+  },
+  "advanced": {
+    "appGroup": "Ứng dụng",
+    "startHidden": "Khởi động ẩn",
+    "startHiddenTip": "Mở vào thanh menu mà không hiện cửa sổ này. Cần bật biểu tượng trên thanh menu.",
+    "launchOnStartup": "Mở khi đăng nhập",
+    "launchOnStartupTip": "Tự động mở Audible khi bạn đăng nhập.",
+    "showMenuBarIcon": "Hiện biểu tượng trên thanh menu",
+    "showMenuBarIconTip": "Hiện Audible trên thanh menu. Khi ẩn, mở lại Audible từ Launchpad hoặc Finder.",
+    "removeFillerWords": "Bỏ từ đệm",
+    "removeFillerWordsTip": "Bỏ các từ đệm như “um”, “uh”, “ờ”, “ừm” và các từ lặp do nói vấp. Xử lý ngay trên máy Mac này.",
+    "interfaceLanguage": "Ngôn ngữ giao diện",
+    "interfaceLanguageTip": "Chỉ đổi chữ hiển thị trong ứng dụng. Giọng nói luôn được tự nhận diện là tiếng Anh hoặc tiếng Việt.",
+    "cleanGroup": "Làm sạch và định dạng",
+    "cleanAndReformat": "Làm sạch và định dạng",
+    "cleanAndReformatTip": "Sau khi chép lời, Groq bỏ từ đệm và các câu nói hớ, rồi định dạng văn bản theo ứng dụng bạn đang dùng. Gửi bản chép lời, từ điển của bạn, tên ứng dụng đang mở và tiêu đề cửa sổ tới Groq. Cần khoá API Groq.",
+    "groqApiKey": "Khoá API Groq",
+    "groqApiKeyTip": "Lưu trong Keychain của macOS, không bao giờ lưu trong tệp cài đặt của Audible. Lấy khoá tại console.groq.com.",
+    "keySaved": "Đã lưu",
+    "keyNotSet": "Chưa đặt",
+    "keyPlaceholder": "gsk_…",
+    "save": "Lưu",
+    "remove": "Xoá",
+    "keySaveFailed": "Không lưu được khoá vào Keychain.",
+    "keyRemoveFailed": "Không xoá được khoá khỏi Keychain."
+  },
   "tray": {
     "open": "Mở Audible",
-    "copyLastTranscript": "Sao chép bản chép gần nhất",
+    "copyLastTranscript": "Sao chép bản chép lời gần nhất",
     "cancel": "Huỷ",
     "quit": "Thoát Audible",
     "secureInputWarning": "⚠ Phím tắt bị chặn bởi Secure Input"

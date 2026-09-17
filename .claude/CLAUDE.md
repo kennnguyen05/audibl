@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Audible v1 is being built milestone by milestone from the plan at
 `~/.claude/plans/let-s-now-create-audible-crystalline-codd.md` (read its "Handoff" section first).
 
-- Milestone 1 (scaffold) done: Tauri 2 + React/TS/Vite/Tailwind v4, tray icon, hidden-window lifecycle, sidebar with 4 empty pages, tauri-specta bindings.
+- Milestone 1 (scaffold) done: Tauri 2 + React/TS/Vite/Tailwind v4, tray icon, hidden-window lifecycle, sidebar with 4 pages, tauri-specta bindings.
+- Milestone 2 (settings, pages, i18n) done: setting commands, General/Dictionary/Advanced UIs, History placeholder, Keychain key commands, en/vi locales with parity check.
 
 ## What this project is
 
@@ -29,7 +30,7 @@ cargo is not on PATH on this machine. Prefix commands with `export PATH="$HOME/.
 bun install                        # JS deps
 bun run tauri dev                  # run the app (use the `run` skill; always background it)
 bun run build                      # tsc + vite build
-bun run check:translations         # en/vi key parity (added in Milestone 2)
+bun run check:translations         # en/vi key parity (vi must match en exactly)
 cd src-tauri && cargo test         # Rust unit tests; also regenerates src/bindings.ts
 cd src-tauri && cargo clippy
 bun scripts/generate-icons.ts      # regenerate placeholder app + tray icons
@@ -41,8 +42,10 @@ bun scripts/generate-icons.ts      # regenerate placeholder app + tray icons
 - `settings.rs`: one `AppSettings` struct (serde defaults, per-field salvage) in `settings_store.json`. `update_settings` persists and emits `settings-changed`. First-launch `app_language` comes from the macOS locale.
 - `tray.rs`: menu bar icon + menu (Open, Copy Last Transcript, Cancel while busy, Quit, Secure Input warning). Updates coalesce into one main-thread apply. Icons are `include_bytes!` template PNGs from `src-tauri/resources/`.
 - `tray_i18n.rs` + `build.rs`: tray strings generated from the `tray` section of `src/i18n/locales/{en,vi}/translation.json`, looked up by `app_language`.
+- `commands.rs`: one setter command per setting; each returns the updated `AppSettings`. `set_clean_and_reformat(true)` fails with `no_api_key` until a key exists; `clear_groq_api_key` also turns Clean and Reformat off.
+- `keychain.rs`: Groq key in the Keychain (service `com.kennnguyen.audible`, account `groq_api_key`) via `keyring`. `has_groq_api_key` reads attributes only (no Keychain prompt); reading the secret can prompt once per rebuild in unsigned dev builds.
 - `autostart.rs`: Launch on Startup via `SMAppService` (fails harmlessly in `tauri dev`).
-- Frontend: `src/main.tsx` → `App.tsx` (sidebar + pages), `src/i18n/` (react-i18next, language follows the stored setting and `settings-changed`), `src/overlay/` (recording overlay webview entry), `src/index.css` (color tokens, light/dark).
+- Frontend: `src/main.tsx` → `App.tsx` (sidebar + pages in `src/pages/`), `src/stores/settings.ts` (zustand mirror; `applySettings(commands.setX(..))` stores the returned settings; `settings-changed` keeps it live), `src/components/ui/` (Group/Row, Toggle, Segmented, Select, TextField/Button, InfoTip), `src/i18n/` (react-i18next, language follows the stored setting and `settings-changed`), `src/overlay/` (recording overlay webview entry), `src/index.css` (color tokens, light/dark).
 
 ## UI rules
 

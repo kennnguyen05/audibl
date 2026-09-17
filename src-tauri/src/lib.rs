@@ -2,6 +2,7 @@ mod actions;
 mod autostart;
 mod commands;
 mod history;
+mod keychain;
 mod settings;
 mod tray;
 mod tray_i18n;
@@ -31,6 +32,19 @@ fn specta_builder() -> Builder<tauri::Wry> {
         .commands(collect_commands![
             commands::get_app_settings,
             commands::show_main_window_command,
+            commands::set_activation_mode,
+            commands::set_mute_while_recording,
+            commands::set_start_hidden,
+            commands::set_autostart,
+            commands::set_show_tray_icon,
+            commands::set_remove_filler_words,
+            commands::set_app_language,
+            commands::set_clean_and_reformat,
+            commands::set_custom_words,
+            commands::set_replacements,
+            commands::set_groq_api_key,
+            commands::has_groq_api_key,
+            commands::clear_groq_api_key,
         ])
         .events(collect_events![settings::SettingsChanged])
 }

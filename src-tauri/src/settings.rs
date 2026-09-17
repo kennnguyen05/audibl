@@ -151,6 +151,33 @@ pub fn update_settings(app: &AppHandle, mutate: impl FnOnce(&mut AppSettings)) -
     settings
 }
 
+/// Trims words, drops empty ones and case-insensitive duplicates, keeping the
+/// first spelling entered.
+pub fn normalize_custom_words(words: Vec<String>) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
+    words
+        .into_iter()
+        .map(|w| w.trim().to_string())
+        .filter(|w| !w.is_empty() && seen.insert(w.to_lowercase()))
+        .collect()
+}
+
+/// Trims triggers (values are kept exactly as typed), drops rows with an empty
+/// trigger or value, and keeps the first row for a repeated trigger.
+pub fn normalize_replacements(replacements: Vec<Replacement>) -> Vec<Replacement> {
+    let mut seen = std::collections::HashSet::new();
+    replacements
+        .into_iter()
+        .map(|r| Replacement {
+            trigger: r.trigger.trim().to_string(),
+            value: r.value,
+        })
+        .filter(|r| {
+            !r.trigger.is_empty() && !r.value.trim().is_empty() && seen.insert(r.trigger.clone())
+        })
+        .collect()
+}
+
 /// Keeps every stored field that is individually valid; broken ones fall back
 /// to their default.
 fn salvage_settings(stored: &serde_json::Value) -> AppSettings {
@@ -202,6 +229,42 @@ mod tests {
         assert_eq!(AppLanguage::from_locale(Some("vi-VN")), AppLanguage::Vi);
         assert_eq!(AppLanguage::from_locale(Some("en-US")), AppLanguage::En);
         assert_eq!(AppLanguage::from_locale(None), AppLanguage::En);
+    }
+
+    #[test]
+    fn custom_words_are_trimmed_and_deduplicated() {
+        let words = normalize_custom_words(vec![
+            " Tauri ".into(),
+            "".into(),
+            "tauri".into(),
+            "Nguyễn".into(),
+        ]);
+        assert_eq!(words, vec!["Tauri".to_string(), "Nguyễn".to_string()]);
+    }
+
+    #[test]
+    fn replacements_keep_value_verbatim() {
+        let rows = normalize_replacements(vec![
+            Replacement {
+                trigger: " my email ".into(),
+                value: "Ken@Example.com".into(),
+            },
+            Replacement {
+                trigger: "my email".into(),
+                value: "other".into(),
+            },
+            Replacement {
+                trigger: "empty".into(),
+                value: "  ".into(),
+            },
+        ]);
+        assert_eq!(
+            rows,
+            vec![Replacement {
+                trigger: "my email".into(),
+                value: "Ken@Example.com".into(),
+            }]
+        );
     }
 
     #[test]

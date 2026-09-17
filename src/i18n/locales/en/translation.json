@@ -5,6 +5,53 @@
     "history": "History",
     "advanced": "Advanced"
   },
+  "general": {
+    "shortcutGroup": "Shortcut",
+    "transcribeShortcut": "Transcribe Shortcut",
+    "activationMode": "Mode",
+    "hold": "Hold",
+    "toggle": "Toggle",
+    "toggleCaption": "Esc cancels · Return finishes",
+    "soundGroup": "Sound",
+    "muteWhileRecording": "Mute While Recording"
+  },
+  "dictionary": {
+    "customWords": "Custom Words",
+    "wordPlaceholder": "Add a word or name",
+    "replacements": "Replacements",
+    "triggerPlaceholder": "When I say",
+    "valuePlaceholder": "Insert",
+    "add": "Add",
+    "remove": "Remove"
+  },
+  "history": {
+    "empty": "No transcripts yet."
+  },
+  "advanced": {
+    "appGroup": "App",
+    "startHidden": "Start Hidden",
+    "startHiddenTip": "Open to the menu bar without showing this window. Needs the menu bar icon.",
+    "launchOnStartup": "Launch on Startup",
+    "launchOnStartupTip": "Start Audible automatically when you log in.",
+    "showMenuBarIcon": "Show Menu Bar Icon",
+    "showMenuBarIconTip": "Show Audible in the menu bar. When hidden, reopen Audible from Launchpad or Finder.",
+    "removeFillerWords": "Remove Filler Words",
+    "removeFillerWordsTip": "Removes fillers like “um”, “uh”, “ờ”, “ừm” and repeated stutters. Done on this Mac.",
+    "interfaceLanguage": "Interface Language",
+    "interfaceLanguageTip": "Changes the app's text only. Speech is always detected automatically as English or Vietnamese.",
+    "cleanGroup": "Clean and Reformat",
+    "cleanAndReformat": "Clean and Reformat",
+    "cleanAndReformatTip": "After transcription, Groq removes fillers and false starts and formats the text for the app you're in. Sends the transcript, your dictionary, and the frontmost app name and window title to Groq. Needs a Groq API key.",
+    "groqApiKey": "Groq API Key",
+    "groqApiKeyTip": "Stored in the macOS Keychain, never in Audible's settings file. Get a key at console.groq.com.",
+    "keySaved": "Saved",
+    "keyNotSet": "Not set",
+    "keyPlaceholder": "gsk_…",
+    "save": "Save",
+    "remove": "Remove",
+    "keySaveFailed": "Couldn't save the key to the Keychain.",
+    "keyRemoveFailed": "Couldn't remove the key from the Keychain."
+  },
   "tray": {
     "open": "Open Audible",
     "copyLastTranscript": "Copy Last Transcript",

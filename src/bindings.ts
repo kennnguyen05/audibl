@@ -10,6 +10,66 @@ async getAppSettings() : Promise<AppSettings> {
 },
 async showMainWindowCommand() : Promise<void> {
     await TAURI_INVOKE("show_main_window_command");
+},
+async setActivationMode(mode: ActivationMode) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_activation_mode", { mode });
+},
+async setMuteWhileRecording(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_mute_while_recording", { enabled });
+},
+async setStartHidden(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_start_hidden", { enabled });
+},
+async setAutostart(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_autostart", { enabled });
+},
+async setShowTrayIcon(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_show_tray_icon", { enabled });
+},
+async setRemoveFillerWords(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_remove_filler_words", { enabled });
+},
+async setAppLanguage(language: AppLanguage) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_app_language", { language });
+},
+/**
+ * Clean and Reformat can only be turned on once a Groq key is saved.
+ */
+async setCleanAndReformat(enabled: boolean) : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_clean_and_reformat", { enabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setCustomWords(words: string[]) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_custom_words", { words });
+},
+async setReplacements(replacements: Replacement[]) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_replacements", { replacements });
+},
+async setGroqApiKey(key: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_groq_api_key", { key }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async hasGroqApiKey() : Promise<boolean> {
+    return await TAURI_INVOKE("has_groq_api_key");
+},
+/**
+ * Removing the key also turns Clean and Reformat off.
+ */
+async clearGroqApiKey() : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_groq_api_key") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
