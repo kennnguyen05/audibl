@@ -1,0 +1,15 @@
+{
+  "sidebar": {
+    "general": "General",
+    "dictionary": "Dictionary",
+    "history": "History",
+    "advanced": "Advanced"
+  },
+  "tray": {
+    "open": "Open Audible",
+    "copyLastTranscript": "Copy Last Transcript",
+    "cancel": "Cancel",
+    "quit": "Quit Audible",
+    "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
+  }
+}

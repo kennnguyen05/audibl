@@ -1,0 +1,22 @@
+/ref/
+
+# macOS
+.DS_Store
+
+# Node / Bun
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Rust / Tauri
+target/
+src-tauri/target/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Tauri generated schemas
+src-tauri/gen/

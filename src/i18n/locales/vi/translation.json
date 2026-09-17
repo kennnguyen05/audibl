@@ -1,0 +1,15 @@
+{
+  "sidebar": {
+    "general": "Chung",
+    "dictionary": "Từ điển",
+    "history": "Lịch sử",
+    "advanced": "Nâng cao"
+  },
+  "tray": {
+    "open": "Mở Audible",
+    "copyLastTranscript": "Sao chép bản chép gần nhất",
+    "cancel": "Huỷ",
+    "quit": "Thoát Audible",
+    "secureInputWarning": "⚠ Phím tắt bị chặn bởi Secure Input"
+  }
+}

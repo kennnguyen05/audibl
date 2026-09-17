@@ -1,0 +1,163 @@
+mod actions;
+mod autostart;
+mod commands;
+mod history;
+mod settings;
+mod tray;
+mod tray_i18n;
+
+use settings::get_settings;
+use tauri::{AppHandle, Manager};
+use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
+use tauri_specta::{collect_commands, collect_events, Builder};
+
+pub fn show_main_window(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        log::error!("Main window not found");
+        return;
+    };
+    let _ = window.unminimize();
+    if let Err(e) = window.show() {
+        log::error!("Failed to show main window: {e}");
+    }
+    let _ = window.set_focus();
+    if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Regular) {
+        log::error!("Failed to set activation policy to Regular: {e}");
+    }
+}
+
+fn specta_builder() -> Builder<tauri::Wry> {
+    Builder::<tauri::Wry>::new()
+        .commands(collect_commands![
+            commands::get_app_settings,
+            commands::show_main_window_command,
+        ])
+        .events(collect_events![settings::SettingsChanged])
+}
+
+pub fn run() {
+    // Avoid ggml-metal residency-set teardown assertions when a native engine
+    // outlives the Tauri shutdown sequence. Must be set before transcribe-cpp
+    // initializes its Metal device.
+    std::env::set_var("GGML_METAL_NO_RESIDENCY", "1");
+
+    let specta_builder = specta_builder();
+
+    #[cfg(debug_assertions)]
+    export_bindings(&specta_builder);
+
+    let invoke_handler = specta_builder.invoke_handler();
+
+    let mut app = tauri::Builder::default()
+        // Single-instance must be registered first: a second launch just
+        // raises the running app.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::recreate_tray_icon(app);
+            show_main_window(app);
+        }))
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Debug)
+                .max_file_size(500_000)
+                .rotation_strategy(RotationStrategy::KeepOne)
+                .clear_targets()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("audible".into()),
+                    }),
+                ])
+                .build(),
+        )
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_macos_permissions::init())
+        .setup(move |app| {
+            specta_builder.mount_events(app);
+            let handle = app.handle().clone();
+
+            tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
+                .title("Audible")
+                .inner_size(720.0, 540.0)
+                .min_inner_size(640.0, 480.0)
+                .visible(false)
+                .build()?;
+
+            tray::create_tray(&handle)?;
+
+            let settings = get_settings(&handle);
+            autostart::apply_autostart(settings.autostart_enabled);
+
+            let must_show = !settings.onboarding_complete;
+            if must_show || !settings.effective_start_hidden() {
+                show_main_window(&handle);
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() != "main" {
+                    return;
+                }
+                api.prevent_close();
+                let _ = window.hide();
+                // With the menu bar icon visible, the app lives there and
+                // leaves the Dock. Without it, the Dock icon is the only way
+                // back in, so it stays.
+                let app = window.app_handle();
+                if get_settings(app).show_tray_icon {
+                    if let Err(e) = app.set_activation_policy(tauri::ActivationPolicy::Accessory) {
+                        log::error!("Failed to set activation policy: {e}");
+                    }
+                }
+            }
+        })
+        .invoke_handler(invoke_handler)
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // A hidden launch must start as Accessory (no Dock icon) between build()
+    // and run(). Demoting an already-activated app at runtime is unreliable
+    // on macOS 26 (Handy #1787).
+    let launch_settings = get_settings(app.handle());
+    if launch_settings.onboarding_complete && launch_settings.effective_start_hidden() {
+        app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+
+    app.run(|app, event| {
+        if let tauri::RunEvent::Reopen { .. } = event {
+            let visible = app
+                .get_webview_window("main")
+                .and_then(|w| w.is_visible().ok())
+                .unwrap_or(false);
+            if !visible {
+                tray::recreate_tray_icon(app);
+            }
+            show_main_window(app);
+        }
+    });
+}
+
+#[cfg(debug_assertions)]
+fn export_bindings(builder: &Builder<tauri::Wry>) {
+    use specta_typescript::{BigIntExportBehavior, Typescript};
+    builder
+        .export(
+            Typescript::default()
+                .bigint(BigIntExportBehavior::Number)
+                .header("// @ts-nocheck"),
+            concat!(env!("CARGO_MANIFEST_DIR"), "/../src/bindings.ts"),
+        )
+        .expect("Failed to export TypeScript bindings");
+}
+
+#[cfg(test)]
+mod tests {
+    /// `cargo test export_bindings` regenerates `src/bindings.ts` without
+    /// launching the app.
+    #[test]
+    fn export_bindings() {
+        super::export_bindings(&super::specta_builder());
+    }
+}

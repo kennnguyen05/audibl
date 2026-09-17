@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* Neutral system look, light and dark. Placeholder until the redesign. */
+:root {
+  --color-bg: #ffffff;
+  --color-sidebar: #f4f4f5;
+  --color-surface: #fafafa;
+  --color-border: #e4e4e7;
+  --color-text: #18181b;
+  --color-muted: #71717a;
+  --color-accent: #2563eb;
+  --color-danger: #dc2626;
+  --color-control: #e4e4e7;
+
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1c1c1e;
+    --color-sidebar: #232326;
+    --color-surface: #252528;
+    --color-border: #38383c;
+    --color-text: #f4f4f5;
+    --color-muted: #a1a1aa;
+    --color-accent: #3b82f6;
+    --color-danger: #f87171;
+    --color-control: #3f3f46;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-sidebar: var(--color-sidebar);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-accent: var(--color-accent);
+  --color-danger: var(--color-danger);
+  --color-control: var(--color-control);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  user-select: none;
+  cursor: default;
+}
+
+input,
+textarea {
+  user-select: text;
+}
