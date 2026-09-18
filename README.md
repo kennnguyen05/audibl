@@ -12,7 +12,7 @@ Audibl is a voice-to-text dictation app for macOS. Press a shortcut in any app, 
 - **Local transcription.** Qwen3-ASR 1.7B runs on the GPU through Metal. It detects English or Vietnamese automatically, including mixed speech.
 - **Dictionary.** Custom words fix names and terms the model misspells. Replacements turn a spoken phrase into fixed text.
 - **Filler removal.** Removes "um", "uh", "ờ", "ừm" and repeated words.
-- **Magic Touch (optional).** Sends the transcript to Groq for punctuation and formatting that suit the app you are typing in. You need your own Groq API key. Audibl stores the key in the macOS Keychain.
+- **Magic Touch (Recommended).** Sends the transcript to Groq for punctuation and formatting that suit the app you are typing in. You need your own Groq API key. Audibl stores the key in the macOS Keychain.
 - **History.** Shows your last 10 dictations. You can copy any of them again.
 - **English or Vietnamese interface.**
 
