@@ -3,6 +3,7 @@ name = "audible"
 version = "1.0.0"
 description = "Audibl: voice-to-text dictation for macOS"
 authors = ["Ken Nguyen"]
+license = "MIT"
 edition = "2021"
 default-run = "audible"
 
