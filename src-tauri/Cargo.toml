@@ -1,7 +1,7 @@
 [package]
 name = "audible"
 version = "0.1.0"
-description = "Audible: voice-to-text dictation for macOS"
+description = "Audibl: voice-to-text dictation for macOS"
 authors = ["Ken Nguyen"]
 edition = "2021"
 default-run = "audible"
@@ -23,9 +23,6 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.rubato]
 opt-level = 3
-[profile.dev.package.rustfft]
-opt-level = 3
-
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 serde_json = "1"
@@ -55,7 +52,6 @@ anyhow = "1.0.95"
 cpal = "0.16.0"
 rtrb = "0.4.0"
 rubato = "0.16.2"
-rustfft = "6.4.0"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }
 transcribe-cpp = { version = "0.2.3", default-features = false, features = ["metal"] }
 whatlang = "0.16"

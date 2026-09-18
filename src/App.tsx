@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -71,9 +71,14 @@ function App() {
     return () => window.removeEventListener("focus", onFocus);
   }, [onboardingComplete]);
 
+  // Set while onboarding is on screen, so the main window fades in after its
+  // outro but appears at once on an ordinary launch.
+  const cameFromOnboarding = useRef(false);
+
   if (!settings || onboarding === undefined) return null;
 
   if (onboarding) {
+    cameFromOnboarding.current = true;
     return (
       <Onboarding
         key={onboarding}
@@ -85,10 +90,22 @@ function App() {
 
   const ActivePage = PAGES[page];
   return (
-    <div className="h-full flex">
+    <div
+      className={`flex h-full ${cameFromOnboarding.current ? "animate-enter" : ""}`}
+    >
       <Sidebar active={page} onSelect={setPage} />
-      <main className="flex-1 overflow-y-auto px-6 py-5">
-        <ActivePage />
+      {/* The rail never scrolls; the content column is the one scroll region.
+          pt-11 clears the traffic lights, which float over the window. */}
+      <main className="relative flex-1 overflow-y-auto px-9 pb-10 pt-11">
+        {/* Nothing renders under the traffic-light strip, so it is free to
+            drag the window. */}
+        <div
+          data-tauri-drag-region
+          className="absolute inset-x-0 top-0 h-11"
+        />
+        <div className="mx-auto max-w-[620px]">
+          <ActivePage />
+        </div>
       </main>
     </div>
   );

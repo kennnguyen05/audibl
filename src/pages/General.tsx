@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/Select";
 import { Toggle } from "@/components/ui/Toggle";
 import { Button, TextField } from "@/components/ui/TextField";
 import { ResetShortcutButton, ShortcutInput } from "@/components/ShortcutInput";
+import { CheckIcon } from "@/components/ui/icons";
 
 const DEFAULT_MIC = "__default__";
 const ALL_CHANNELS = "__all__";
@@ -25,7 +26,6 @@ export function General() {
   const [keyInput, setKeyInput] = useState("");
   const [keyError, setKeyError] = useState<string | null>(null);
   const [keySaving, setKeySaving] = useState(false);
-  const [keySuccess, setKeySuccess] = useState(false);
   const [cleanWarning, setCleanWarning] = useState(false);
 
   useEffect(() => {
@@ -51,8 +51,6 @@ export function General() {
 
   if (!settings) return null;
 
-  const isToggle = settings.activation_mode === "toggle";
-
   const keyErrorMessage = (code: string) => {
     switch (code) {
       case "empty_key":
@@ -70,7 +68,6 @@ export function General() {
     const trimmed = keyInput.trim();
     if (!trimmed) return;
     setKeyError(null);
-    setKeySuccess(false);
     setKeySaving(true);
     const result = await commands.setGroqApiKey(trimmed);
     setKeySaving(false);
@@ -79,8 +76,6 @@ export function General() {
       setHasKey(true);
       setEditing(false);
       setCleanWarning(false);
-      setKeySuccess(true);
-      window.setTimeout(() => setKeySuccess(false), 2500);
     } else {
       setKeyError(keyErrorMessage(result.error));
     }
@@ -88,7 +83,6 @@ export function General() {
 
   const removeKey = async () => {
     setKeyError(null);
-    setKeySuccess(false);
     const result = await commands.clearGroqApiKey();
     if (result.status === "ok") {
       applySettings(Promise.resolve(result.data));
@@ -102,9 +96,15 @@ export function General() {
 
   const startReplace = () => {
     setKeyError(null);
-    setKeySuccess(false);
     setKeyInput("");
     setEditing(true);
+  };
+
+  // Back to the redacted view; the saved key is untouched.
+  const cancelReplace = () => {
+    setKeyError(null);
+    setKeyInput("");
+    setEditing(false);
   };
 
   const setCleanAndReformat = async (enabled: boolean) => {
@@ -125,28 +125,35 @@ export function General() {
     <div>
       <PageTitle>{t("sidebar.general")}</PageTitle>
 
-      <Group title={t("general.shortcutGroup")}>
-        <Row label={t("general.transcribeShortcut")}>
+      <Group>
+        <Row
+          label={t("general.transcribeShortcut")}
+          caption={t("general.shortcutCaption")}
+        >
           <ShortcutInput value={settings.shortcut} />
           <ResetShortcutButton shortcut={settings.shortcut} />
         </Row>
-        <Row
-          label={t("general.activationMode")}
-          caption={isToggle ? t("general.toggleCaption") : undefined}
-        >
+        <Row label={t("general.activationMode")} stacked>
           <Segmented<ActivationMode>
+            size="large"
             label={t("general.activationMode")}
             value={settings.activation_mode}
             options={[
-              { value: "hold", label: t("general.hold") },
-              { value: "toggle", label: t("general.toggle") },
+              {
+                value: "hold",
+                label: t("general.hold"),
+                description: t("general.holdCaption"),
+              },
+              {
+                value: "toggle",
+                label: t("general.toggle"),
+                description: t("general.toggleCaption"),
+              },
             ]}
             onChange={(mode) => applySettings(commands.setActivationMode(mode))}
           />
         </Row>
-      </Group>
 
-      <Group title={t("general.soundGroup")}>
         <Row label={t("general.microphone")}>
           <Select
             label={t("general.microphone")}
@@ -206,99 +213,126 @@ export function General() {
         </Row>
       </Group>
 
-      <Group title={t("general.cleanGroup")}>
+      <Group title={t("general.cleanAndReformat")}>
         <Row
-          label={t("general.cleanAndReformat")}
-          caption={t("general.cleanAndReformatCaption")}
+          label={t("general.useCleanAndReformat")}
+          caption={
+            <>
+              {t("general.cleanAndReformatCaption")}{" "}
+              <button
+                type="button"
+                className="underline underline-offset-2 transition-colors hover:text-accent"
+                onClick={() => setCleanWarning(true)}
+              >
+                {t("general.showMeHow")}
+              </button>
+            </>
+          }
         >
           <Toggle
-            label={t("general.cleanAndReformat")}
+            label={t("general.useCleanAndReformat")}
             checked={settings.clean_and_reformat}
             onChange={setCleanAndReformat}
           />
         </Row>
         <Row
-          label={t("general.groqApiKey")}
-          caption={t("general.groqApiKeyCaption")}
+          label={
+            <span className="flex w-full items-center justify-between gap-4">
+              {t("general.groqApiKey")}
+              {hasKey ? (
+                <span className="flex items-center gap-1 text-sm text-success">
+                  <CheckIcon size={14} />
+                  {t("general.keyStatusSaved")}
+                </span>
+              ) : (
+                <span className="text-sm text-muted">
+                  {t("general.keyStatusNotSaved")}
+                </span>
+              )}
+            </span>
+          }
+          stacked
         >
-          <span className={`text-xs ${hasKey ? "" : "text-muted"}`}>
-            {hasKey ? t("general.keySaved") : t("general.keyNotSet")}
-          </span>
-        </Row>
-        <div className="px-3 py-2.5 flex gap-2">
-          {editing ? (
-            <>
-              <TextField
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                className="flex-1"
-                value={keyInput}
-                placeholder={t("general.keyPlaceholder")}
-                onChange={(e) => {
-                  setKeyInput(e.target.value);
-                  setKeyError(null);
-                }}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && keyInput.trim() && saveKey()
-                }
-              />
-              <Button
-                onClick={saveKey}
-                disabled={!keyInput.trim() || keySaving}
-              >
-                {t("general.save")}
-              </Button>
-              {hasKey && (
+          <div className="flex items-center gap-2">
+            {editing ? (
+              <>
+                <TextField
+                  type="password"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="min-w-0 flex-1"
+                  value={keyInput}
+                  placeholder={t("general.keyPlaceholder")}
+                  onChange={(e) => {
+                    setKeyInput(e.target.value);
+                    setKeyError(null);
+                  }}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && keyInput.trim() && saveKey()
+                  }
+                />
+                <Button
+                  onClick={saveKey}
+                  variant="primary"
+                  disabled={!keyInput.trim() || keySaving}
+                >
+                  {t("general.save")}
+                </Button>
+                {hasKey && (
+                  <>
+                    <Button onClick={cancelReplace} variant="secondary">
+                      {t("general.cancel")}
+                    </Button>
+                    <Button onClick={removeKey} variant="danger">
+                      {t("general.remove")}
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Redacted display only: the real key never reaches the
+                    frontend, so this placeholder is a fixed decorative
+                    string, not derived from the saved key. Disabled so it
+                    can't be focused, selected, or copied. */}
+                <TextField
+                  type="text"
+                  disabled
+                  value=""
+                  placeholder={t("general.keyRedacted")}
+                  aria-label={t("general.groqApiKey")}
+                  className="min-w-0 flex-1"
+                  style={{ userSelect: "none" }}
+                />
+                <Button onClick={startReplace} variant="secondary">
+                  {t("general.replace")}
+                </Button>
                 <Button onClick={removeKey} variant="danger">
                   {t("general.remove")}
                 </Button>
-              )}
-            </>
-          ) : (
-            <>
-              {/* Redacted display only: the real key never reaches the
-                  frontend, so this placeholder is a fixed decorative
-                  string, not derived from the saved key. Disabled so it
-                  can't be focused, selected, or copied. */}
-              <TextField
-                type="text"
-                disabled
-                value=""
-                placeholder={t("general.keyRedacted")}
-                aria-label={t("general.groqApiKey")}
-                className="flex-1"
-                style={{ userSelect: "none" }}
-              />
-              <Button onClick={startReplace}>{t("general.replace")}</Button>
-              <Button onClick={removeKey} variant="danger">
-                {t("general.remove")}
-              </Button>
-            </>
-          )}
-        </div>
-        {keyError && (
-          <div className="px-3 py-2 text-xs text-danger">{keyError}</div>
-        )}
-        {keySuccess && (
-          <div className="px-3 py-2 text-xs text-success">
-            {t("general.keySaveSuccess")}
+              </>
+            )}
           </div>
+          {keyError && (
+            <p className="mt-2 text-sm text-danger">{keyError}</p>
+          )}
+        </Row>
+        {/* A card row of its own, so the warning sits under the setting that
+            raised it instead of floating outside the group. */}
+        {cleanWarning && (
+          <p className="animate-fade-in px-5 py-3.5 text-sm leading-snug text-warning">
+            {t("general.cleanNeedsKeyBefore")}
+            <button
+              type="button"
+              className="underline underline-offset-2 transition-colors hover:text-accent"
+              onClick={openGroqKeysPage}
+            >
+              {t("general.cleanNeedsKeyLink")}
+            </button>
+            {t("general.cleanNeedsKeyAfter")}
+          </p>
         )}
       </Group>
-      {cleanWarning && (
-        <div className="mt-[-16px] mb-6 px-1 text-xs text-warning animate-fade-in">
-          {t("general.cleanNeedsKeyBefore")}
-          <button
-            type="button"
-            className="underline hover:text-accent"
-            onClick={openGroqKeysPage}
-          >
-            {t("general.cleanNeedsKeyLink")}
-          </button>
-          {t("general.cleanNeedsKeyAfter")}
-        </div>
-      )}
     </div>
   );
 }

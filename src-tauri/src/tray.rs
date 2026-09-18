@@ -69,7 +69,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let tray = TrayIconBuilder::with_id("main")
         .icon(Image::from_bytes(icon_bytes(TrayIconState::Idle))?)
         .icon_as_template(true)
-        .tooltip("Audible")
+        .tooltip("Audibl")
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" | "secure_input_warning" => crate::show_main_window(app),

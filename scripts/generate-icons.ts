@@ -1,6 +1,14 @@
-// Generates the placeholder app icon and the menu bar (tray) template icons.
+// Generates the app icon and the menu bar (tray) template icons.
 // Run: bun scripts/generate-icons.ts && bun tauri icon src-tauri/icons/app-icon.png
-// The artwork is intentionally simple; it will be replaced in the redesign.
+//
+// The mark is the brand one, traced from `brand-assets/Audibl icon.jpg`: seven
+// square-ended bars in a symmetric arch, the middle bar lifted clear of the
+// baseline. The bar table matches `MARK_BARS` in src/components/ui/icons.tsx,
+// so the sidebar, the app icon and the tray icon are one drawing.
+//
+// Tray icons are macOS template images: alpha only, painted pure black, and
+// tinted by the system. State therefore has to read from silhouette alone, so
+// the three are deliberately different shapes rather than a subtle family.
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
@@ -77,41 +85,69 @@ function roundedRect(x: number, y: number, cx: number, cy: number, hw: number, h
   return dx * dx + dy * dy <= r * r;
 }
 
-const BAR_HEIGHTS = [0.3, 0.6, 0.9, 0.6, 0.3];
+// The mark, drawn in a 0..1 box. `scale` is the side of its square 96-unit
+// grid; the bars span 90 of those 96 units, so a little air is built in.
+// Each entry is one bar's [top, bottom] as a fraction of that grid.
+const MARK_BARS: [number, number][] = [
+  [0.5, 1],
+  [0.25, 1],
+  [0, 0.75],
+  [0, 0.5],
+  [0, 0.75],
+  [0.25, 1],
+  [0.5, 1],
+];
+const MARK_BAR_W = 7.5 / 96;
+const MARK_PITCH = 13.75 / 96;
 
-function bars(x: number, y: number, scale: number, cy = 0.5): boolean {
-  const width = 0.09 * scale;
-  const gap = 0.07 * scale;
-  const total = BAR_HEIGHTS.length * width + (BAR_HEIGHTS.length - 1) * gap;
-  const start = 0.5 - total / 2 + width / 2;
-  return BAR_HEIGHTS.some((h, i) =>
-    roundedRect(x, y, start + i * (width + gap), cy, width / 2, (h * scale) / 2, width / 2),
-  );
+function mark(x: number, y: number, scale: number, cy = 0.5): boolean {
+  const left = 0.5 - (90 / 96) * scale * 0.5;
+  const top = cy - scale / 2;
+  for (let i = 0; i < MARK_BARS.length; i++) {
+    const bx = left + i * MARK_PITCH * scale;
+    if (x < bx || x > bx + MARK_BAR_W * scale) continue;
+    const [t, b] = MARK_BARS[i];
+    if (y >= top + t * scale && y <= top + b * scale) return true;
+  }
+  return false;
 }
 
 const BLACK: Rgba = [0, 0, 0, 255];
 
+// The brand asset is a black mark on white, so the Dock icon inverts the app's
+// dark palette: warm off-white tile, ink mark. It is the one surface the
+// dark-only rule does not own.
+const PAPER_TOP: Rgba = [250, 247, 241, 255];
+const PAPER_BOTTOM: Rgba = [232, 226, 215, 255];
+const INK: Rgba = [22, 20, 18, 255];
+
 const appIcon: Shader = (x, y) => {
-  if (!roundedRect(x, y, 0.5, 0.5, 0.41, 0.41, 0.09)) return null;
-  if (bars(x, y, 0.62)) return [255, 255, 255, 255];
+  if (!roundedRect(x, y, 0.5, 0.5, 0.44, 0.44, 0.2)) return null;
+  if (mark(x, y, 0.46)) return INK;
   const t = y;
-  return [Math.round(40 + 30 * t), Math.round(44 + 20 * t), Math.round(52 + 40 * t), 255];
+  return [
+    Math.round(PAPER_TOP[0] + (PAPER_BOTTOM[0] - PAPER_TOP[0]) * t),
+    Math.round(PAPER_TOP[1] + (PAPER_BOTTOM[1] - PAPER_TOP[1]) * t),
+    Math.round(PAPER_TOP[2] + (PAPER_BOTTOM[2] - PAPER_TOP[2]) * t),
+    255,
+  ];
 };
 
-const trayIdle: Shader = (x, y) => (bars(x, y, 0.95) ? BLACK : null);
+const trayIdle: Shader = (x, y) => (mark(x, y, 0.82) ? BLACK : null);
 
+// A filled dot: the one shape nobody misreads as anything but recording.
 const trayRecording: Shader = (x, y) => {
   const dx = x - 0.5;
   const dy = y - 0.5;
-  const d = Math.sqrt(dx * dx + dy * dy);
-  return d <= 0.22 || (d >= 0.36 && d <= 0.45) ? BLACK : null;
+  return dx * dx + dy * dy <= 0.3 * 0.3 ? BLACK : null;
 };
 
+// An ellipsis: working on it.
 const trayProcessing: Shader = (x, y) => {
-  for (const cx of [0.2, 0.5, 0.8]) {
+  for (const cx of [0.19, 0.5, 0.81]) {
     const dx = x - cx;
     const dy = y - 0.5;
-    if (dx * dx + dy * dy <= 0.1 * 0.1) return BLACK;
+    if (dx * dx + dy * dy <= 0.125 * 0.125) return BLACK;
   }
   return null;
 };

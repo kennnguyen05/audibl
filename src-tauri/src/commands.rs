@@ -68,7 +68,7 @@ pub fn set_app_language(app: AppHandle, language: AppLanguage) -> AppSettings {
     settings
 }
 
-/// Clean and Reformat can only be turned on once a Groq key is saved.
+/// Magic Touch can only be turned on once a Groq key is saved.
 #[tauri::command]
 #[specta::specta]
 pub fn set_clean_and_reformat(app: AppHandle, enabled: bool) -> Result<AppSettings, String> {
@@ -194,6 +194,16 @@ pub fn cancel_model_download(app: AppHandle) {
     app.state::<ModelManager>().cancel_download();
 }
 
+/// Quits Audibl. Onboarding offers this when the user doesn't want to
+/// download the model; an in-progress download is cancelled first so the
+/// `.partial` file is left in a resumable state.
+#[tauri::command]
+#[specta::specta]
+pub fn quit_app(app: AppHandle) {
+    app.state::<ModelManager>().cancel_download();
+    app.exit(0);
+}
+
 /// Finishes onboarding once the model is on disk.
 #[tauri::command]
 #[specta::specta]
@@ -245,7 +255,7 @@ pub fn copy_text(app: AppHandle, text: String) -> Result<(), String> {
     crate::history::copy_text(&app, &text)
 }
 
-/// Removing the key also turns Clean and Reformat off.
+/// Removing the key also turns Magic Touch off.
 #[tauri::command]
 #[specta::specta]
 pub fn clear_groq_api_key(app: AppHandle) -> Result<AppSettings, String> {

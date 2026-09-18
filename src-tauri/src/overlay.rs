@@ -17,8 +17,11 @@ tauri_panel! {
     })
 }
 
-const WIDTH: f64 = 240.0;
-const HEIGHT: f64 = 48.0;
+/// The panel is deliberately larger than the pill drawn inside it: the window
+/// is transparent, and the slack around the pill is what the drop shadow needs
+/// in order not to be clipped.
+const WIDTH: f64 = 300.0;
+const HEIGHT: f64 = 56.0;
 const BOTTOM_OFFSET: f64 = 16.0;
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
@@ -32,8 +35,21 @@ pub enum OverlayState {
 #[derive(Clone, Serialize)]
 struct ShowPayload {
     state: OverlayState,
-    /// Toggle mode shows the Esc / Return hint while recording.
-    toggle: bool,
+    /// Set only by the debug `AUDIBLE_DEV_OVERLAY` screenshot hook. There is
+    /// no microphone behind that, so the overlay draws a synthetic waveform
+    /// instead of a flat line. Always false in release builds.
+    preview: bool,
+}
+
+fn is_preview() -> bool {
+    #[cfg(debug_assertions)]
+    {
+        std::env::var_os("AUDIBLE_DEV_OVERLAY").is_some()
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        false
+    }
 }
 
 /// Bumped on every show, so a delayed hide from an older session never hides
@@ -43,7 +59,7 @@ static SHOW_GENERATION: AtomicU64 = AtomicU64::new(0);
 pub fn create(app: &AppHandle) {
     let result = PanelBuilder::<_, RecordingOverlayPanel>::new(app, OVERLAY_LABEL)
         .url(WebviewUrl::App("src/overlay/index.html".into()))
-        .title("Audible Overlay")
+        .title("Audibl Overlay")
         .level(PanelLevel::Status)
         .size(tauri::Size::Logical(tauri::LogicalSize {
             width: WIDTH,
@@ -94,7 +110,7 @@ fn position(app: &AppHandle) -> Option<(f64, f64)> {
     Some((x, bottom - HEIGHT - BOTTOM_OFFSET))
 }
 
-pub fn show(app: &AppHandle, state: OverlayState, toggle: bool) {
+pub fn show(app: &AppHandle, state: OverlayState) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         let Some(window) = handle.get_webview_window(OVERLAY_LABEL) else {
@@ -105,7 +121,14 @@ pub fn show(app: &AppHandle, state: OverlayState, toggle: bool) {
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
         let _ = window.show();
-        let _ = handle.emit_to(OVERLAY_LABEL, "show-overlay", ShowPayload { state, toggle });
+        let _ = handle.emit_to(
+            OVERLAY_LABEL,
+            "show-overlay",
+            ShowPayload {
+                state,
+                preview: is_preview(),
+            },
+        );
     });
 }
 

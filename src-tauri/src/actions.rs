@@ -5,6 +5,7 @@ use crate::audio::AudioManager;
 use crate::coordinator::{Coordinator, Effect, Input};
 use crate::overlay::{self, OverlayState};
 use crate::settings::{get_settings, ActivationMode};
+use crate::sfx::{self, Sound};
 use crate::shortcut;
 use crate::transcription::{TranscribeError, TranscriptionManager};
 use crate::tray::{self, TrayIconState};
@@ -47,7 +48,7 @@ fn start(app: &AppHandle, session: u64, mode: ActivationMode) {
     // No model (deleted, or the model constant changed): open the download
     // screen instead of recording.
     if !crate::is_setup_complete(app) {
-        log::warn!("Shortcut pressed before setup is complete; opening Audible");
+        log::warn!("Shortcut pressed before setup is complete; opening Audibl");
         crate::show_main_window(app);
         send(app, Input::StartFailed);
         return;
@@ -62,6 +63,7 @@ fn start(app: &AppHandle, session: u64, mode: ActivationMode) {
         send(app, Input::StartFailed);
         return;
     }
+    sfx::play(app, Sound::On);
 
     // Warm the model while the user speaks.
     app.state::<Arc<TranscriptionManager>>().preload();
@@ -70,14 +72,15 @@ fn start(app: &AppHandle, session: u64, mode: ActivationMode) {
     if mode == ActivationMode::Toggle {
         shortcut::arm_finish(app);
     }
-    overlay::show(app, OverlayState::Recording, mode == ActivationMode::Toggle);
+    overlay::show(app, OverlayState::Recording);
     tray::set_tray_state(app, TrayIconState::Recording);
 }
 
 fn finish(app: &AppHandle, session: u64) {
     shortcut::disarm_finish(app);
     let samples = app.state::<AudioManager>().stop_recording();
-    overlay::show(app, OverlayState::Transcribing, false);
+    sfx::play(app, Sound::Off);
+    overlay::show(app, OverlayState::Transcribing);
     tray::set_tray_state(app, TrayIconState::Processing);
 
     let app = app.clone();
@@ -138,6 +141,7 @@ fn teardown(app: &AppHandle) {
 fn cancel_recording(app: &AppHandle, session: u64) {
     log::info!("Recording cancelled");
     app.state::<AudioManager>().cancel_recording();
+    sfx::play(app, Sound::Off);
     end_session(session);
     teardown(app);
 }

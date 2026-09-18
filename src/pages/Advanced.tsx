@@ -6,7 +6,8 @@ import { Toggle } from "@/components/ui/Toggle";
 import { Segmented } from "@/components/ui/Segmented";
 import { InfoTip } from "@/components/ui/InfoTip";
 
-// The only page with hover info.
+// The only page with hover info: these settings need a sentence of context,
+// but the rows are short and a caption under every one would bloat the page.
 function Label({ text, tip }: { text: string; tip: string }) {
   return (
     <>
@@ -74,6 +75,9 @@ export function Advanced() {
             }
           />
         </Row>
+      </Group>
+
+      <Group title={t("advanced.textGroup")}>
         <Row
           label={
             <Label

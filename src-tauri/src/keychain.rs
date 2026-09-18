@@ -9,7 +9,7 @@ use keyring::Entry;
 use security_framework::item::{ItemClass, ItemSearchOptions, Limit};
 use std::sync::Mutex;
 
-const SERVICE: &str = "com.kennnguyen.audible";
+const SERVICE: &str = "com.kennnguyen.audibl";
 const ACCOUNT: &str = "groq_api_key";
 
 /// The key read once per launch, so dictations don't hit the Keychain (and

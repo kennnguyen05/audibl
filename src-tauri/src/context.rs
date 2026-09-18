@@ -1,6 +1,6 @@
 //! Frontmost app context, captured when recording starts: app name and bundle
 //! id (NSWorkspace) plus the focused window title (Accessibility API). History
-//! records the app name; Clean and Reformat sends all three to Groq.
+//! records the app name; Magic Touch sends all three to Groq.
 
 use objc2_app_kit::NSWorkspace;
 use std::ffi::{c_char, c_void, CStr};
@@ -130,7 +130,7 @@ fn to_string(value: &Owned) -> Option<String> {
     })
 }
 
-/// Needs the Accessibility permission Audible already requires for paste.
+/// Needs the Accessibility permission Audibl already requires for paste.
 fn focused_window_title(pid: i32) -> Option<String> {
     let app = Owned(unsafe { AXUIElementCreateApplication(pid) });
     if app.0.is_null() {

@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
-import { PageTitle } from "@/components/ui/Row";
-import { Button } from "@/components/ui/TextField";
+import { EmptyRow, Group, PageTitle } from "@/components/ui/Row";
+import { IconButton } from "@/components/ui/TextField";
+import { CheckIcon, CopyIcon, TrashIcon } from "@/components/ui/icons";
 import {
   deleteHistoryEntry,
   initHistoryStore,
   useHistoryStore,
 } from "@/stores/history";
 
+/** Past this, a transcript is clamped to four lines with a Show more toggle.
+ *  No title tooltip: hover info lives on the Advanced page only. */
+const CLAMP_AFTER_CHARS = 260;
+
 export function History() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const entries = useHistoryStore((s) => s.entries);
   const [copied, setCopied] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<number[]>([]);
 
   useEffect(() => {
     initHistoryStore();
@@ -26,49 +32,74 @@ export function History() {
     }
   };
 
-  const formatTime = (timestamp: number) =>
-    new Date(timestamp).toLocaleString(i18n.language, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const toggleExpanded = (timestamp: number) =>
+    setExpanded((list) =>
+      list.includes(timestamp)
+        ? list.filter((id) => id !== timestamp)
+        : [...list, timestamp],
+    );
 
   return (
     <div>
       <PageTitle>{t("sidebar.history")}</PageTitle>
-      {entries.length === 0 ? (
-        <p className="text-muted">{t("history.empty")}</p>
-      ) : (
-        <div className="rounded-lg border border-border bg-surface divide-y divide-border">
-          {entries.map((entry) => (
-            <div key={entry.timestamp} className="px-3 py-2.5">
-              <p className="whitespace-pre-wrap break-words select-text">
-                {entry.text}
-              </p>
-              <div className="flex items-center justify-between gap-2 mt-2">
-                <span className="text-xs text-muted truncate">
-                  {formatTime(entry.timestamp)}
-                  {entry.app_name ? ` · ${entry.app_name}` : ""}
-                </span>
-                <div className="flex gap-2 shrink-0">
-                  <Button onClick={() => copy(entry.timestamp, entry.text)}>
-                    {copied === entry.timestamp
-                      ? t("history.copied")
-                      : t("history.copy")}
-                  </Button>
-                  <Button
+      <Group>
+        {entries.length === 0 ? (
+          <EmptyRow>{t("history.empty")}</EmptyRow>
+        ) : (
+          entries.map((entry) => {
+            const isCopied = copied === entry.timestamp;
+            const isExpanded = expanded.includes(entry.timestamp);
+            const clampable = entry.text.length > CLAMP_AFTER_CHARS;
+            return (
+              <div
+                key={entry.timestamp}
+                className="group flex items-start gap-3 px-5 py-3.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={`select-text whitespace-pre-wrap break-words text-base leading-relaxed text-text ${
+                      clampable && !isExpanded ? "line-clamp-4" : ""
+                    }`}
+                  >
+                    {entry.text}
+                  </p>
+                  {clampable && (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(entry.timestamp)}
+                      className="mt-1 text-xs text-muted transition-colors hover:text-text"
+                    >
+                      {isExpanded ? t("history.showLess") : t("history.showMore")}
+                    </button>
+                  )}
+                  <p className="mt-2 truncate text-xs text-muted">
+                    {entry.app_name}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <IconButton
+                    onClick={() => copy(entry.timestamp, entry.text)}
+                    label={isCopied ? t("history.copied") : t("history.copy")}
+                  >
+                    {isCopied ? (
+                      <CheckIcon className="text-success" />
+                    ) : (
+                      <CopyIcon />
+                    )}
+                  </IconButton>
+                  <IconButton
                     variant="danger"
                     onClick={() => deleteHistoryEntry(entry.timestamp)}
+                    label={t("history.delete")}
                   >
-                    {t("history.delete")}
-                  </Button>
+                    <TrashIcon />
+                  </IconButton>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            );
+          })
+        )}
+      </Group>
     </div>
   );
 }

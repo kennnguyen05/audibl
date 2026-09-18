@@ -1,7 +1,7 @@
 //! Secure Input detection. While any process holds macOS Secure Event Input
 //! (password fields, Terminal's "Secure Keyboard Entry"), CGEventTaps stop
 //! receiving key presses, so the Transcribe Shortcut silently stops working.
-//! Audible polls `IsSecureEventInputEnabled()` and, once it has been held for
+//! Audibl polls `IsSecureEventInputEnabled()` and, once it has been held for
 //! a few seconds, shows a warning at the top of the menu bar menu.
 //!
 //! Detection is ported from Handy (`secure_input.rs`, MIT). Handy's Carbon

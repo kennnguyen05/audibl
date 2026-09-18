@@ -14,6 +14,7 @@ mod permissions;
 mod pipeline;
 mod secure_input;
 mod settings;
+mod sfx;
 mod shortcut;
 mod text;
 mod transcription;
@@ -24,6 +25,21 @@ use settings::get_settings;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
 use tauri_specta::{collect_commands, collect_events, Builder};
+
+/// Pins the whole app to the dark system appearance. Audibl has one palette,
+/// so the traffic lights, the `<select>` popup menu and every other native
+/// control must not follow the user's macOS appearance setting.
+fn force_dark_appearance() {
+    use objc2_app_kit::{NSAppearance, NSAppearanceNameDarkAqua, NSApplication};
+    use objc2_foundation::MainThreadMarker;
+
+    let Some(mtm) = MainThreadMarker::new() else {
+        log::error!("force_dark_appearance called off the main thread");
+        return;
+    };
+    let appearance = unsafe { NSAppearance::appearanceNamed(NSAppearanceNameDarkAqua) };
+    NSApplication::sharedApplication(mtm).setAppearance(appearance.as_deref());
+}
 
 pub fn show_main_window(app: &AppHandle) {
     let Some(window) = app.get_webview_window("main") else {
@@ -87,6 +103,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::start_model_download,
             commands::cancel_model_download,
             commands::complete_onboarding,
+            commands::quit_app,
             commands::change_shortcut,
             commands::start_shortcut_capture,
             commands::stop_shortcut_capture,
@@ -133,7 +150,7 @@ pub fn run() {
                 .targets([
                     Target::new(TargetKind::Stdout),
                     Target::new(TargetKind::LogDir {
-                        file_name: Some("audible".into()),
+                        file_name: Some("audibl".into()),
                     }),
                 ])
                 .build(),
@@ -153,10 +170,27 @@ pub fn run() {
             app.manage(transcription::TranscriptionManager::new(&handle));
             app.manage(coordinator::Coordinator::new(handle.clone()));
 
+            // The app is dark only, so the native chrome is pinned dark too:
+            // otherwise the traffic lights and the <select> popup menu would
+            // follow the user's macOS appearance and render light on our ink.
+            force_dark_appearance();
+
+            // Overlay + hidden title lets the sidebar run to the top edge with
+            // the traffic lights floating over it. Sidebar.tsx reserves the
+            // space for them.
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
-                .title("Audible")
-                .inner_size(720.0, 540.0)
-                .min_inner_size(640.0, 480.0)
+                .title("Audibl")
+                // Fixed size: every page is laid out for this one window, so
+                // there is nothing for a resize to reflow. 712 is General's
+                // full height (both cards, no warning) plus main's pb-10, so
+                // that page never scrolls.
+                .inner_size(900.0, 712.0)
+                .resizable(false)
+                .maximizable(false)
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true)
+                // Matches --color-bg, so showing the window never flashes white.
+                .background_color(tauri::window::Color(0x16, 0x14, 0x12, 0xff))
                 .visible(false)
                 .build()?;
 
@@ -167,6 +201,8 @@ pub fn run() {
             autostart::apply_autostart(settings.autostart_enabled);
 
             on_ready(&handle);
+            #[cfg(debug_assertions)]
+            dev_overlay_preview(&handle);
             secure_input::start_monitor(&handle);
             if !is_setup_complete(&handle) || !settings.effective_start_hidden() {
                 show_main_window(&handle);
@@ -223,6 +259,35 @@ pub fn run() {
             }
         }
         _ => {}
+    });
+}
+
+/// `AUDIBLE_DEV_OVERLAY=recording|transcribing|cleaning` shows the recording
+/// overlay in that state at startup and leaves it up, so each state can be
+/// screenshotted without speaking into the microphone. Debug builds only;
+/// with the variable unset it returns before touching anything.
+#[cfg(debug_assertions)]
+fn dev_overlay_preview(app: &AppHandle) {
+    let Ok(raw) = std::env::var("AUDIBLE_DEV_OVERLAY") else {
+        return;
+    };
+    let state = match raw.trim().to_ascii_lowercase().as_str() {
+        "recording" => overlay::OverlayState::Recording,
+        "transcribing" => overlay::OverlayState::Transcribing,
+        "cleaning" => overlay::OverlayState::Cleaning,
+        other => {
+            log::warn!("Ignoring AUDIBLE_DEV_OVERLAY={other:?}");
+            return;
+        }
+    };
+    let handle = app.clone();
+    // The overlay webview subscribes to `show-overlay` after it mounts, which
+    // is well after setup runs, so re-show it a few times until it sticks.
+    std::thread::spawn(move || {
+        for _ in 0..4 {
+            std::thread::sleep(std::time::Duration::from_millis(1200));
+            overlay::show(&handle, state);
+        }
     });
 }
 

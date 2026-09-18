@@ -15,7 +15,7 @@
 //! only if every word is needed: "on cloud flare" keeps "on".
 //!
 //! Replacements: whole-phrase matches, longest trigger first. Case-insensitive
-//! unless Clean and Reformat is on. Inserted values are always kept exactly as
+//! unless Magic Touch is on. Inserted values are always kept exactly as
 //! typed and are returned so the Groq step can require them verbatim.
 
 use crate::settings::Replacement;

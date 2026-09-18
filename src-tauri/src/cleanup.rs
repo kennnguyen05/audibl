@@ -1,4 +1,4 @@
-//! Clean and Reformat: an optional Groq pass over the locally cleaned text.
+//! Magic Touch: an optional Groq pass over the locally cleaned text.
 //!
 //! It removes fillers, stutters, false starts, and self-corrections, and
 //! formats for the app in use. Any failure (no key, network, timeout, empty
@@ -405,7 +405,7 @@ mod tests {
             ),
         ];
         for (ctx, language, transcript, keep) in cases {
-            let dictionary = vec!["Audible".to_string()];
+            let dictionary = vec!["Audibl".to_string()];
             let input = CleanupInput::new(&ctx, language, &dictionary, &keep, transcript);
             let started = std::time::Instant::now();
             let output = runtime.block_on(request(&key, &input));

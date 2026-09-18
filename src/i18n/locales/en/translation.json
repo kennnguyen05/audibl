@@ -3,18 +3,19 @@
     "general": "General",
     "dictionary": "Dictionary",
     "history": "History",
-    "advanced": "Advanced"
+    "advanced": "Advanced",
+    "slogan": "Be heard. Be Audibl."
   },
   "general": {
-    "shortcutGroup": "Shortcut",
-    "transcribeShortcut": "Transcribe Shortcut",
+    "transcribeShortcut": "Shortcut",
+    "shortcutCaption": "Press it in any app, then speak",
     "pressKeys": "Press keys…",
     "shortcutError": "Couldn't use that shortcut. Try another.",
     "activationMode": "Mode",
     "hold": "Hold",
     "toggle": "Toggle",
-    "toggleCaption": "Esc cancels · Return finishes",
-    "soundGroup": "Sound",
+    "holdCaption": "Hold to talk, release pastes",
+    "toggleCaption": "Press to start; Return pastes, Esc cancels",
     "microphone": "Microphone",
     "defaultMicrophone": "System Default",
     "channel": "Channel",
@@ -22,79 +23,92 @@
     "channelNumber": "Channel {{number}}",
     "muteWhileRecording": "Mute While Recording",
     "resetShortcut": "Reset shortcut to default",
-    "cleanGroup": "Clean and Reformat",
-    "cleanAndReformat": "Clean and Reformat",
+    "cleanAndReformat": "Magic Touch",
+    "useCleanAndReformat": "Use Magic Touch",
     "cleanAndReformatCaption": "Removes fillers and false starts, then formats the text for the app you're in. Needs a Groq API key.",
+    "showMeHow": "Show me how",
     "groqApiKey": "Groq API Key",
-    "groqApiKeyCaption": "Stored in the macOS Keychain, never in Audible's settings file.",
-    "keySaved": "Saved",
-    "keyNotSet": "Not set",
     "keyPlaceholder": "gsk_…",
     "keyRedacted": "gsk_••••••••••••••••",
+    "keyStatusSaved": "Saved",
+    "keyStatusNotSaved": "Not saved",
     "save": "Save",
     "remove": "Remove",
     "replace": "Replace",
+    "cancel": "Cancel",
     "keySaveFailed": "Couldn't save the key to the Keychain.",
     "keyRemoveFailed": "Couldn't remove the key from the Keychain.",
-    "keySaveSuccess": "Key saved.",
     "keyEmpty": "Enter a key first.",
     "keyInvalid": "That key isn't valid. Check it and try again.",
     "keyUnreachable": "Couldn't reach Groq. Check your connection and try again.",
     "cleanNeedsKeyBefore": "Get a free key at ",
     "cleanNeedsKeyLink": "console.groq.com/keys",
-    "cleanNeedsKeyAfter": ", paste it in the API key field above, press Save, then turn this on."
+    "cleanNeedsKeyAfter": ", paste it in the API key field above, press Save, then turn on Magic Touch."
   },
   "dictionary": {
     "customWords": "Custom Words",
+    "customWordsEmpty": "Add a name or term you want spelled a certain way, like Tauri or Nguyễn.",
+    "addWord": "Add word",
     "wordPlaceholder": "Add a word or name",
     "replacements": "Replacements",
+    "replacementsEmpty": "Add a short trigger like “btw” and Audibl writes “by the way” instead.",
+    "addReplacement": "Add replacement",
     "triggerPlaceholder": "When I say",
     "valuePlaceholder": "Insert",
     "add": "Add",
+    "cancel": "Cancel",
     "remove": "Remove"
   },
   "history": {
-    "empty": "No transcripts yet.",
+    "empty": "Press your shortcut and speak — your last 10 transcripts land here.",
     "copy": "Copy",
     "copied": "Copied",
-    "delete": "Delete"
+    "delete": "Delete",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "advanced": {
     "appGroup": "App",
+    "textGroup": "Text and language",
     "startHidden": "Start Hidden",
     "startHiddenTip": "Open to the menu bar without showing this window. Needs the menu bar icon.",
     "launchOnStartup": "Launch on Startup",
-    "launchOnStartupTip": "Start Audible automatically when you log in.",
+    "launchOnStartupTip": "Start Audibl automatically when you log in.",
     "showMenuBarIcon": "Show Menu Bar Icon",
-    "showMenuBarIconTip": "Show Audible in the menu bar. When hidden, reopen Audible from Launchpad or Finder.",
+    "showMenuBarIconTip": "Show Audibl in the menu bar. When hidden, reopen Audibl from Launchpad or Finder.",
     "removeFillerWords": "Remove Filler Words",
     "removeFillerWordsTip": "Removes fillers like “um”, “uh”, “ờ”, “ừm” and repeated stutters. Done on this Mac.",
     "interfaceLanguage": "Interface Language",
     "interfaceLanguageTip": "Changes the app's text only. Speech is always detected automatically as English or Vietnamese."
   },
   "onboarding": {
-    "stepOf": "Step {{step}} of {{total}}",
-    "granted": "Granted",
-    "continue": "Continue",
+    "headline": "Set up Audibl to type what you say",
+    "slogan": "Be heard. Be Audibl.",
+    "granted": "Done",
     "finish": "Finish",
+    "language": {
+      "title": "Choose your language"
+    },
     "microphone": {
       "title": "Allow microphone access",
-      "body": "Audible listens only while you hold or toggle your shortcut. Your voice is transcribed on this Mac.",
-      "action": "Allow Microphone"
+      "body": "Audibl listens only while you hold or toggle your shortcut. Your voice is transcribed on this Mac.",
+      "action": "Allow microphone"
     },
     "accessibility": {
       "title": "Allow Accessibility access",
-      "body": "Audible needs Accessibility to detect your shortcut from any app and to paste the text where you are typing. Turn on Audible in System Settings › Privacy & Security › Accessibility.",
-      "action": "Open Accessibility Settings"
+      "body": "Audibl needs Accessibility to detect your shortcut from any app and to paste the text where you are typing. Turn on Audibl in System Settings › Privacy & Security › Accessibility.",
+      "action": "Open Accessibility settings"
     },
     "model": {
-      "title": "Download speech model",
-      "body": "Audible needs a {{size}} speech model. It downloads once and then runs fully offline.",
+      "title": "Download the speech model",
+      "body": "Audibl needs a {{size}} speech model. It downloads once and then runs fully offline.",
       "download": "Download",
-      "resume": "Resume Download",
+      "resume": "Resume download",
       "retry": "Retry",
+      "quit": "Quit Audibl",
       "verifying": "Verifying…",
-      "progress": "{{downloaded}} MB of {{total}} MB · {{percent}}%",
+      "ready": "The speech model is ready.",
+      "progress": "{{downloaded}} MB of {{total}} MB ({{percent}}%)",
       "errors": {
         "network": "The download was interrupted. Check your connection and retry; it will resume where it stopped.",
         "stalled": "The download stopped receiving data. Retry to resume.",
@@ -107,14 +121,13 @@
   },
   "overlay": {
     "transcribing": "Transcribing…",
-    "cleaning": "Cleaning…",
-    "toggleHint": "Esc cancel · ↩ finish"
+    "cleaning": "Cleaning…"
   },
   "tray": {
-    "open": "Open Audible",
+    "open": "Open Audibl",
     "copyLastTranscript": "Copy Last Transcript",
     "cancel": "Cancel",
-    "quit": "Quit Audible",
+    "quit": "Quit Audibl",
     "secureInputWarning": "⚠ Shortcuts blocked by Secure Input"
   }
 }

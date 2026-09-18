@@ -1,13 +1,13 @@
 //! Audio capture for dictation. The microphone opens on shortcut press and
 //! closes when the recording ends, so the macOS mic indicator is only on
-//! while Audible is actually listening.
+//! while Audibl is actually listening.
 
 pub mod devices;
+pub mod level;
 pub mod mute;
 pub mod recorder;
 pub mod resampler;
 pub mod vad;
-pub mod visualizer;
 
 use crate::settings::get_settings;
 use recorder::AudioRecorder;
@@ -51,7 +51,7 @@ impl AudioManager {
         let app = self.app.clone();
         let last_emit = AtomicU64::new(0);
         Ok(
-            AudioRecorder::new(Box::new(vad)).with_level_callback(move |levels| {
+            AudioRecorder::new(Box::new(vad)).with_level_callback(move |level| {
                 // ~30 FPS is plenty for the overlay waveform.
                 let now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -59,7 +59,7 @@ impl AudioManager {
                     .as_millis() as u64;
                 if now.saturating_sub(last_emit.load(Ordering::Relaxed)) >= LEVEL_EMIT_INTERVAL_MS {
                     last_emit.store(now, Ordering::Relaxed);
-                    let _ = app.emit_to(OVERLAY_LABEL, "mic-level", levels);
+                    let _ = app.emit_to(OVERLAY_LABEL, "mic-level", level);
                 }
             }),
         )
@@ -85,8 +85,19 @@ impl AudioManager {
         self.recording.store(true, Ordering::SeqCst);
         drop(guard);
 
+        // Mute only after the On chime has played. Checking `recording` under
+        // the mute lock means a stop in the meantime (which clears the flag
+        // before it restores) is never followed by a stray mute.
         if settings.mute_while_recording {
-            self.mute.lock().unwrap().apply();
+            let app = self.app.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(crate::sfx::ON_DURATION);
+                let manager = app.state::<AudioManager>();
+                let mut mute = manager.mute.lock().unwrap();
+                if manager.recording.load(Ordering::SeqCst) {
+                    mute.apply();
+                }
+            });
         }
         log::info!("Recording started");
         Ok(())

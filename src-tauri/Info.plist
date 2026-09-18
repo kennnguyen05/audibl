@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Audible records your voice to transcribe it locally on this Mac.</string>
+  <string>Audibl records your voice to transcribe it locally on this Mac.</string>
 </dict>
 </plist>

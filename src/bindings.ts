@@ -33,7 +33,7 @@ async setAppLanguage(language: AppLanguage) : Promise<AppSettings> {
     return await TAURI_INVOKE("set_app_language", { language });
 },
 /**
- * Clean and Reformat can only be turned on once a Groq key is saved.
+ * Magic Touch can only be turned on once a Groq key is saved.
  */
 async setCleanAndReformat(enabled: boolean) : Promise<Result<AppSettings, string>> {
     try {
@@ -66,7 +66,7 @@ async hasGroqApiKey() : Promise<boolean> {
     return await TAURI_INVOKE("has_groq_api_key");
 },
 /**
- * Removing the key also turns Clean and Reformat off.
+ * Removing the key also turns Magic Touch off.
  */
 async clearGroqApiKey() : Promise<Result<AppSettings, string>> {
     try {
@@ -138,6 +138,14 @@ async completeOnboarding() : Promise<Result<AppSettings, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Quits Audibl. Onboarding offers this when the user doesn't want to
+ * download the model; an in-progress download is cancelled first so the
+ * `.partial` file is left in a resumable state.
+ */
+async quitApp() : Promise<void> {
+    await TAURI_INVOKE("quit_app");
 },
 /**
  * Validates and registers a new Transcribe Shortcut, then persists it.
@@ -227,7 +235,7 @@ timestamp: number;
  */
 text: string; 
 /**
- * The transcript before local cleanup and Clean and Reformat.
+ * The transcript before local cleanup and Magic Touch.
  */
 raw_text: string; app_name: string | null }
 export type ModelDownloadComplete = null

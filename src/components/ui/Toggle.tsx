@@ -14,13 +14,13 @@ export function Toggle({ checked, onChange, disabled, label }: ToggleProps) {
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative w-9 h-5 rounded-full transition-colors disabled:opacity-40 ${
-        checked ? "bg-accent" : "bg-control"
+      className={`relative h-6 w-10 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+        checked ? "bg-accent" : "bg-control ring-1 ring-inset ring-border"
       }`}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-          checked ? "translate-x-4" : ""
+        className={`absolute top-1 left-1 h-4 w-4 rounded-full transition-transform duration-150 ${
+          checked ? "translate-x-4 bg-text" : "bg-muted"
         }`}
       />
     </button>

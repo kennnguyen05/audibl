@@ -1,6 +1,6 @@
 //! Voice activity detection: Silero VAD wrapped in onset/hangover smoothing.
 //! Ported from Handy (`audio_toolkit/vad/{mod,silero,smoothed}.rs`, MIT),
-//! trimmed to the offline profile Audible uses.
+//! trimmed to the offline profile Audibl uses.
 
 use anyhow::Result;
 use std::collections::VecDeque;
@@ -123,7 +123,7 @@ impl SmoothedVad {
         }
     }
 
-    /// Audible's profile: 450 ms prefill, 450 ms hangover, 60 ms onset.
+    /// Audibl's profile: 450 ms prefill, 450 ms hangover, 60 ms onset.
     pub fn with_default_timing(inner: Box<dyn VoiceActivityDetector>) -> Self {
         let frame = inner.frame_samples();
         Self::new(

@@ -1,5 +1,5 @@
 //! Launch on Startup via `SMAppService` (macOS 13+). The login item is
-//! attributed to the app bundle, so it shows as "Audible" in System Settings.
+//! attributed to the app bundle, so it shows as "Audibl" in System Settings.
 //! Registration fails in `tauri dev` (no signed bundle); that is logged, not
 //! surfaced.
 

@@ -1,6 +1,6 @@
 //! Text pipeline after transcription:
 //! filler removal (if on) → custom-word correction → replacements
-//! (case-sensitive only when Clean and Reformat is on) → Clean and Reformat
+//! (case-sensitive only when Magic Touch is on) → Magic Touch
 //! (if on) → output for paste and history.
 
 use crate::settings::get_settings;
@@ -58,7 +58,7 @@ pub fn process(
     if settings.clean_and_reformat && !local_text.trim().is_empty() {
         match crate::keychain::get_groq_api_key() {
             Some(key) => {
-                crate::overlay::show(app, crate::overlay::OverlayState::Cleaning, false);
+                crate::overlay::show(app, crate::overlay::OverlayState::Cleaning);
                 let input = cleanup::CleanupInput::new(
                     &context,
                     transcription.language,
@@ -88,7 +88,7 @@ pub fn process(
                 );
                 final_text = text;
             }
-            None => log::warn!("Clean and Reformat is on but no Groq key is saved"),
+            None => log::warn!("Magic Touch is on but no Groq key is saved"),
         }
     }
 

@@ -17,7 +17,7 @@ pub struct HistoryEntry {
     pub timestamp: f64,
     /// The text that was pasted.
     pub text: String,
-    /// The transcript before local cleanup and Clean and Reformat.
+    /// The transcript before local cleanup and Magic Touch.
     pub raw_text: String,
     pub app_name: Option<String>,
 }

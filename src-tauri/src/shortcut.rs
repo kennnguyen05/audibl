@@ -2,7 +2,7 @@
 //! which are registered only while they apply.
 //!
 //! Primary backend is handy-keys, a CGEventTap that swallows registered keys
-//! and supports modifier-only and fn combos. If the tap cannot start, Audible
+//! and supports modifier-only and fn combos. If the tap cannot start, Audibl
 //! falls back to tauri-plugin-global-shortcut. Ported from Handy
 //! (`shortcut/handy_keys.rs`, `tauri_impl.rs`, `handler.rs`, MIT).
 //!

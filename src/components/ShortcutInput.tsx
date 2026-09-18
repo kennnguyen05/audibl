@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { listen } from "@tauri-apps/api/event";
 import { commands, type ShortcutCaptureEvent } from "@/bindings";
 import { applySettings } from "@/stores/settings";
+import { IconButton } from "@/components/ui/Button";
+import { ResetIcon } from "@/components/ui/icons";
 
 // Must match `DEFAULT_SHORTCUT` in src-tauri/src/settings.rs.
 const DEFAULT_SHORTCUT = "option+space";
@@ -73,22 +75,30 @@ export function formatShortcut(shortcut: string): string {
     .join(" + ");
 }
 
-function Keycap({ children }: { children: string }) {
+function Keycap({ children, spaced }: { children: string; spaced: boolean }) {
   return (
-    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded border border-border bg-control px-1 text-[11px] leading-4">
+    <span
+      className={`inline-flex h-4 items-center justify-center text-base leading-none ${spaced ? "mx-0.5" : ""}`}
+    >
       {children}
     </span>
   );
 }
 
-/** Renders a shortcut as a row of keycaps, e.g. ⌥ + Space. The enclosing
+/** Renders a shortcut as symbols flush together, e.g. ⌥⌘⇧␣, matching macOS
+ * menu shortcut hints. Multi-character keys (letters, F-keys) get a little
+ * breathing room so they don't run into their neighbors. The enclosing
  * button carries the readable aria-label, so this is decorative only. */
 function ShortcutKeycaps({ shortcut }: { shortcut: string }) {
   const keys = parseShortcut(shortcut);
   return (
-    <span className="flex items-center gap-1" aria-hidden="true">
+    // The modifier glyphs come from the system font's fallback, whose ink
+    // sits about a pixel above the line box's centre; the nudge centres it.
+    <span className="flex translate-y-px items-center" aria-hidden="true">
       {keys.map((k) => (
-        <Keycap key={k.id}>{k.display}</Keycap>
+        <Keycap key={k.id} spaced={k.display.length > 1}>
+          {k.display}
+        </Keycap>
       ))}
     </span>
   );
@@ -177,7 +187,7 @@ export function ShortcutInput({ value }: ShortcutInputProps) {
   };
 
   return (
-    <div ref={container} className="flex flex-col items-end gap-1">
+    <div ref={container} className="flex flex-col items-start gap-1">
       <button
         type="button"
         onClick={start}
@@ -188,22 +198,24 @@ export function ShortcutInput({ value }: ShortcutInputProps) {
               : t("general.pressKeys")
             : formatShortcut(value)
         }
-        className={`flex min-w-28 items-center justify-center rounded-md border px-2.5 py-1 ${
-          capturing ? "border-accent text-accent" : "border-border bg-bg"
+        className={`flex h-7 w-fit items-center justify-center rounded-control border bg-control px-2.5 transition-colors ${
+          capturing
+            ? "border-accent text-accent"
+            : "border-border text-text hover:border-muted"
         }`}
       >
         {capturing ? (
           preview ? (
             <ShortcutKeycaps shortcut={preview} />
           ) : (
-            <span className="text-xs">{t("general.pressKeys")}</span>
+            <span className="text-sm">{t("general.pressKeys")}</span>
           )
         ) : (
           <ShortcutKeycaps shortcut={value} />
         )}
       </button>
       {error && (
-        <span className="text-xs text-danger">{t("general.shortcutError")}</span>
+        <span className="text-sm text-danger">{t("general.shortcutError")}</span>
       )}
     </div>
   );
@@ -227,27 +239,13 @@ export function ResetShortcutButton({ shortcut }: ResetShortcutButtonProps) {
   };
 
   return (
-    <button
-      type="button"
+    <IconButton
+      variant="bare"
       onClick={reset}
       disabled={isDefault}
-      aria-label={t("general.resetShortcut")}
-      className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted hover:text-text disabled:opacity-40"
+      label={t("general.resetShortcut")}
     >
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 16 16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.88" />
-        <path d="M13.5 2.5v3.2h-3.2" />
-      </svg>
-    </button>
+      <ResetIcon size={22} />
+    </IconButton>
   );
 }

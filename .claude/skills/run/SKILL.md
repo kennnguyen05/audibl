@@ -1,18 +1,18 @@
 ---
 name: run
-description: Launch Audible (Tauri dev) for manual testing or screenshots. Use whenever asked to run, start, launch, or verify the app works.
+description: Launch Audibl (Tauri dev) for manual testing or screenshots. Use whenever asked to run, start, launch, or verify the app works.
 ---
 
-# Running Audible
+# Running Audibl
 
-Audible is a menu bar app. On first launch (or while onboarding is incomplete) the
+Audibl is a menu bar app. On first launch (or while onboarding is incomplete) the
 main window opens. After onboarding, with Start Hidden on, only the menu bar icon
 appears.
 
 ## Always kill stale processes first
 
 `bun run tauri dev` runs `target/debug/audible` in the foreground and never returns.
-A background launch from an earlier session can still be running. Audible enforces
+A background launch from an earlier session can still be running. Audibl enforces
 single-instance, so a new launch only refocuses the stale instance (and a foreground
 launch hangs the tool call forever).
 
@@ -59,14 +59,14 @@ Accessibility is granted).
 
 Useful log greps: `Model loaded`, `Model unloaded`, `Transcribed`, `Pasted`,
 `Groq cleanup`. The persistent log file is
-`~/Library/Logs/com.kennnguyen.audible/audible.log`.
+`~/Library/Logs/com.kennnguyen.audibl/audibl.log`.
 
 ## Fresh onboarding
 
 Delete app data before launch to see first-run onboarding:
 
 ```bash
-rm -rf ~/Library/Application\ Support/com.kennnguyen.audible
+rm -rf ~/Library/Application\ Support/com.kennnguyen.audibl
 ```
 
 This also deletes the downloaded model (about 1.5 GB).
@@ -85,10 +85,11 @@ The shell running Claude has Accessibility, so synthetic keys reach the event ta
    Option+Space, `say`, tap Return (or Esc to cancel).
 4. Read the result with `osascript -e 'tell application "TextEdit" to get text of front document'`.
 
-Screenshot only Audible's windows: list window ids with `CGWindowListCopyWindowInfo`
-(the overlay is "Audible Overlay", 240×48, layer 25) and `screencapture -x -o -l<id>`.
+Screenshot only Audibl's windows: list window ids with `CGWindowListCopyWindowInfo`
+(the overlay is "Audibl Overlay", 300×56, layer 25) and `screencapture -x -o -l<id>`.
 
-## Cleanup
+## Leave it running
 
-Kill the same two process patterns when done (see above) so the next launch doesn't
-inherit a stale instance.
+Do not kill the dev process after verifying — leave it running so Ken can check the
+app himself. Only kill stale processes (see above) right before the *next* launch,
+or if Ken explicitly asks you to stop it.

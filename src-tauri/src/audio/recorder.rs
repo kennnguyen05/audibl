@@ -1,8 +1,8 @@
 //! Microphone capture: cpal input stream → wait-free ring buffer → consumer
 //! thread that resamples to 16 kHz mono frames, filters them through VAD, and
-//! feeds the level visualizer.
+//! feeds the overlay level meter.
 //!
-//! Ported from Handy (`audio_toolkit/audio/recorder.rs`, MIT). Audible drops
+//! Ported from Handy (`audio_toolkit/audio/recorder.rs`, MIT). Audibl drops
 //! the streaming callback and the per-session VAD policy: every recording uses
 //! the same VAD profile.
 
@@ -23,7 +23,7 @@ use rtrb::{Consumer, Producer, RingBuffer};
 
 use super::resampler::FrameResampler;
 use super::vad::{VadFrame, VoiceActivityDetector, SAMPLE_RATE};
-use super::visualizer::AudioVisualiser;
+use super::level::LevelMeter;
 
 enum Cmd {
     Start,
@@ -44,7 +44,7 @@ struct CaptureTransportState {
     overrun_samples: AtomicU64,
 }
 
-pub type LevelCallback = Arc<dyn Fn(Vec<f32>) + Send + Sync + 'static>;
+pub type LevelCallback = Arc<dyn Fn(f32) + Send + Sync + 'static>;
 type SharedVad = Arc<Mutex<Box<dyn VoiceActivityDetector>>>;
 
 pub struct AudioRecorder {
@@ -71,7 +71,7 @@ impl AudioRecorder {
 
     pub fn with_level_callback<F>(mut self, cb: F) -> Self
     where
-        F: Fn(Vec<f32>) + Send + Sync + 'static,
+        F: Fn(f32) + Send + Sync + 'static,
     {
         self.level_cb = Some(Arc::new(cb));
         self
@@ -346,7 +346,7 @@ enum ChunkDisposition {
 struct CaptureProcessor {
     vad: SharedVad,
     level_cb: Option<LevelCallback>,
-    visualizer: AudioVisualiser,
+    level: LevelMeter,
     resampler: FrameResampler,
     max_drain_samples: usize,
     processed: Vec<f32>,
@@ -363,19 +363,14 @@ impl CaptureProcessor {
             frame_duration,
         );
 
-        let target_window = (f64::from(in_sample_rate) / 30.0).round() as usize;
-        let window_size = [256usize, 512, 1024, 2048]
-            .into_iter()
-            .min_by_key(|w| w.abs_diff(target_window))
-            .unwrap();
-        let visualizer = AudioVisualiser::new(in_sample_rate, window_size, 16, 400.0, 4000.0);
+        let level = LevelMeter::new(in_sample_rate, 30);
         let max_drain_samples =
             ((in_sample_rate as u128 * MAX_DRAIN_CHUNK.as_millis()) / 1_000).max(1) as usize;
 
         Self {
             vad,
             level_cb,
-            visualizer,
+            level,
             resampler,
             max_drain_samples,
             processed: Vec::new(),
@@ -386,7 +381,7 @@ impl CaptureProcessor {
     fn begin_recording(&mut self) {
         self.dropped_samples = 0;
         self.processed.clear();
-        self.visualizer.reset();
+        self.level.reset();
         self.resampler.reset();
         self.vad.lock().unwrap().reset();
     }
@@ -412,9 +407,9 @@ impl CaptureProcessor {
     }
 
     fn process_raw(&mut self, raw: &[f32]) {
-        if let Some(levels) = self.visualizer.feed(raw) {
+        if let Some(level) = self.level.feed(raw) {
             if let Some(cb) = &self.level_cb {
-                cb(levels);
+                cb(level);
             }
         }
         let vad = &self.vad;

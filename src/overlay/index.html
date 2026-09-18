@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Audible Overlay</title>
+    <title>Audibl Overlay</title>
     <style>
       html,
       body,
@@ -13,6 +13,76 @@
         height: 100%;
         overflow: hidden;
         background: transparent;
+      }
+
+      /* The travelling highlight of the busy states. It is a second, amber
+         copy of the very same bar row, revealed through a soft gradient
+         window that slides from one end to the other — so the bars themselves
+         light up in turn rather than a separate object sliding over them.
+         Lives here because the overlay may not edit src/index.css. */
+      .overlay-sweep {
+        -webkit-mask-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          #000 38%,
+          #000 62%,
+          transparent 100%
+        );
+        mask-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          #000 38%,
+          #000 62%,
+          transparent 100%
+        );
+        -webkit-mask-size: 62% 100%;
+        mask-size: 62% 100%;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        animation: overlay-sweep 1500ms linear infinite;
+      }
+
+      @keyframes overlay-sweep {
+        from {
+          -webkit-mask-position: -75% 50%;
+          mask-position: -75% 50%;
+        }
+        to {
+          -webkit-mask-position: 175% 50%;
+          mask-position: 175% 50%;
+        }
+      }
+
+      /* The recording light. A slow breath, not a blink: it says the mic is
+         open without competing with the bars for attention. */
+      .record-dot {
+        animation: record-pulse 1600ms ease-in-out infinite;
+      }
+
+      @keyframes record-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.55;
+        }
+      }
+
+      /* Reduced motion: nothing travels. The highlight stops being a moving
+         window and becomes a dim, even wash over the resting bars, so the
+         state still reads without any animation at all. */
+      @media (prefers-reduced-motion: reduce) {
+        .record-dot {
+          animation: none !important;
+        }
+
+        .overlay-sweep {
+          animation: none !important;
+          -webkit-mask-image: none !important;
+          mask-image: none !important;
+          opacity: 0.45;
+        }
       }
     </style>
   </head>

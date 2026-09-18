@@ -2,11 +2,11 @@
 
 ## Handy
 
-Parts of Audible are ported from [Handy](https://github.com/cjpais/Handy), used under the MIT License below.
+Parts of Audibl are ported from [Handy](https://github.com/cjpais/Handy), used under the MIT License below.
 
 Ported or adapted code, in `src-tauri/`:
 
-- `src/audio/recorder.rs`, `src/audio/resampler.rs`, `src/audio/visualizer.rs`, `src/audio/vad.rs`, `src/audio/mute.rs`: microphone capture, resampling, level visualizer, Silero VAD smoothing, output mute
+- `src/audio/recorder.rs`, `src/audio/resampler.rs`, `src/audio/vad.rs`, `src/audio/mute.rs`: microphone capture, resampling, Silero VAD smoothing, output mute
 - `src/model.rs`: resumable, sha256-verified model download
 - `src/transcription.rs`: model lifecycle (lazy load, idle unload)
 - `src/coordinator.rs`: shortcut state machine pattern

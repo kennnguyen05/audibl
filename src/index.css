@@ -1,57 +1,81 @@
+/* One family for the whole app. Self-hosted so it renders correctly offline,
+   and it ships a Vietnamese subset, which the vi locale needs. */
+@import "@fontsource-variable/newsreader";
 @import "tailwindcss";
 
-/* Neutral system look, light and dark. Placeholder until the redesign. */
-:root {
-  --color-bg: #ffffff;
-  --color-sidebar: #f4f4f5;
-  --color-surface: #fafafa;
-  --color-border: #e4e4e7;
-  --color-text: #18181b;
-  --color-muted: #71717a;
-  --color-accent: #2563eb;
-  --color-danger: #dc2626;
-  --color-success: #16a34a;
-  --color-warning: #b45309;
-  --color-control: #e4e4e7;
+/* Audibl is dark only. There is one palette; nothing follows
+   prefers-color-scheme. The warmth (a yellow-leaning, very low-chroma ink)
+   is the dark inversion of Wispr Flow's cream — never a blue-black.
 
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
-  font-size: 13px;
+   Depth comes from the surface ladder sidebar -> bg -> surface plus a 1px
+   border. Cards carry no shadow; shadow is reserved for things that really
+   float above the window (the recording overlay, the InfoTip popover). */
+@theme {
+  --color-sidebar: #0e0d0c;
+  --color-bg: #161412;
+  --color-surface: #1e1b18;
+  --color-control: #272320;
+  --color-border: #2b2723;
+  --color-text: #f5f1ea;
+  --color-muted: #9a9186;
+
+  /* The only saturated color in the app. It marks exactly one thing per
+     screen: what is focused, what is on, or what is listening. */
+  --color-accent: #e8b33c;
+  --color-warning: #e8b33c;
+  --color-danger: #e8705a;
+  /* The overlay's recording light only. A true red, because it has to read as
+     "the microphone is open" against whatever window it floats over. */
+  --color-record: #e5484d;
+  --color-success: #7fbf7a;
+
+  /* Both tokens resolve to the one family, so `font-sans` and `font-serif`
+     stay valid utilities and no rule can reintroduce a second typeface. */
+  --font-sans: "Newsreader Variable", ui-serif, Georgia, serif;
+  --font-serif: var(--font-sans);
+
+  /* Radius encodes scale rather than being applied uniformly: containers,
+     then controls, then pills. */
+  --radius-control: 8px;
+  --radius-card: 14px;
+
+  /* Sizes are in px, and --spacing is pinned, so neither depends on the root
+     font-size. Changing the body size can then never resize the layout. */
+  --spacing: 4px;
+
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 18px;
+  --text-base: 15px;
+  --text-base--line-height: 21px;
+  --text-lg: 17px;
+  --text-lg--line-height: 24px;
+  --text-xl: 22px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 30px;
+  --text-2xl--line-height: 36px;
+  --text-3xl: 38px;
+  --text-3xl--line-height: 44px;
+  /* The onboarding outro's slogan, alone on the screen. */
+  --text-display: 56px;
+  --text-display--line-height: 64px;
+}
+
+:root {
+  /* Tells the engine to render native controls, form widgets and any
+     unstyled scrollbar dark, whatever macOS is set to. */
+  color-scheme: dark;
+
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-size: 15px;
+  font-weight: 400;
   line-height: 1.45;
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   font-synthesis: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #1c1c1e;
-    --color-sidebar: #232326;
-    --color-surface: #252528;
-    --color-border: #38383c;
-    --color-text: #f4f4f5;
-    --color-muted: #a1a1aa;
-    --color-accent: #3b82f6;
-    --color-danger: #f87171;
-    --color-success: #4ade80;
-    --color-warning: #fbbf24;
-    --color-control: #3f3f46;
-  }
-}
-
-@theme inline {
-  --color-bg: var(--color-bg);
-  --color-sidebar: var(--color-sidebar);
-  --color-surface: var(--color-surface);
-  --color-border: var(--color-border);
-  --color-text: var(--color-text);
-  --color-muted: var(--color-muted);
-  --color-accent: var(--color-accent);
-  --color-danger: var(--color-danger);
-  --color-success: var(--color-success);
-  --color-warning: var(--color-warning);
-  --color-control: var(--color-control);
 }
 
 html,
@@ -63,13 +87,43 @@ body,
 
 body {
   background: var(--color-bg);
+  /* Desktop-app feel: text is not selectable by default. Inputs and the
+     History transcripts opt back in. */
   user-select: none;
   cursor: default;
 }
 
-input,
-textarea {
-  user-select: text;
+/* These must be layered. Unlayered element rules outrank every Tailwind
+   utility, so a bare `button { color: inherit }` would silently beat
+   `text-sidebar` on the primary button and paint cream on cream. */
+@layer base {
+  input,
+  textarea {
+    user-select: text;
+    font: inherit;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* One visible focus treatment for the whole app. Nothing may set
+   outline: none without providing its own. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Scroll stays functional; the track and thumb are just not drawn. */
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes fade-in {
@@ -83,4 +137,29 @@ textarea {
 
 .animate-fade-in {
   animation: fade-in 180ms ease-out;
+}
+
+/* The main window arriving after the onboarding outro. */
+.animate-enter {
+  animation: fade-in 500ms ease-out;
+}
+
+/* The overlay's traveling sweep, the app's one piece of ambient motion. */
+@keyframes sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(200%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
