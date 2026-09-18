@@ -1,6 +1,8 @@
 /* One family for the whole app. Self-hosted so it renders correctly offline,
    and it ships a Vietnamese subset, which the vi locale needs. */
 @import "@fontsource-variable/newsreader";
+/* Italic is its own face; without it the onboarding slogan renders upright. */
+@import "@fontsource-variable/newsreader/wght-italic.css";
 @import "tailwindcss";
 
 /* Audibl is dark only. There is one palette; nothing follows

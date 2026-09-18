@@ -216,6 +216,17 @@ pub fn complete_onboarding(app: AppHandle) -> Result<AppSettings, String> {
     Ok(settings)
 }
 
+/// Starts the shortcuts if they aren't running yet. A returning user can grant
+/// Accessibility while the app is open, and the UI then goes straight to the
+/// main window without passing through `complete_onboarding`.
+#[tauri::command]
+#[specta::specta]
+pub fn ensure_shortcut(app: AppHandle) {
+    if !crate::shortcut::is_initialized(&app) {
+        crate::on_ready(&app);
+    }
+}
+
 /// Validates and registers a new Transcribe Shortcut, then persists it.
 #[tauri::command]
 #[specta::specta]

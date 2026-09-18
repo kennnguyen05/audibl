@@ -140,6 +140,14 @@ async completeOnboarding() : Promise<Result<AppSettings, string>> {
 }
 },
 /**
+ * Starts the shortcuts if they aren't running yet. A returning user can grant
+ * Accessibility while the app is open, and the UI then goes straight to the
+ * main window without passing through `complete_onboarding`.
+ */
+async ensureShortcut() : Promise<void> {
+    await TAURI_INVOKE("ensure_shortcut");
+},
+/**
  * Quits Audibl. Onboarding offers this when the user doesn't want to
  * download the model; an in-progress download is cancelled first so the
  * `.partial` file is left in a resumable state.

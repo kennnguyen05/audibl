@@ -76,7 +76,14 @@ export function Onboarding({ initialStep, onDone }: OnboardingProps) {
   // window as soon as it sees that, so the outro plays out first.
   const finish = async () => {
     setPhase("leaving");
-    await wait(FADE_OUT_MS);
+    // The italic face loads on first use; fetch it during the fade-out so the
+    // slogan doesn't swap fonts mid-fade.
+    await Promise.all([
+      wait(FADE_OUT_MS),
+      document.fonts
+        .load(`italic 56px "Newsreader Variable"`, t("onboarding.slogan"))
+        .catch(() => {}),
+    ]);
     setPhase("slogan");
     await wait(SLOGAN_IN_MS + SLOGAN_HOLD_MS);
     setPhase("closing");
@@ -116,7 +123,7 @@ export function Onboarding({ initialStep, onDone }: OnboardingProps) {
       {(phase === "slogan" || phase === "closing") && (
         <p
           aria-live="polite"
-          className={`px-9 text-center text-display italic text-text transition-[opacity,transform] ease-out ${
+          className={`px-9 text-center text-display italic text-text transition-[opacity,translate] ease-out ${
             phase === "closing" ? "duration-[600ms]" : "duration-[700ms]"
           } ${
             sloganShown && phase === "slogan"

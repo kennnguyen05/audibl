@@ -75,7 +75,13 @@ Audibl v1 was built milestone by milestone (one commit each) from the plan at
 
 - Magic Touch "Show me how" (2026-09-18): the `InfoTip glyph="?"` on the Magic Touch group title is gone (superseding the 2026-09-18 "UI fix" entry above), along with its `cleanHowTo` locale key. The Use Magic Touch row's caption now ends with a clickable "Show me how" (`general.showMeHow`) that calls the same `setCleanWarning(true)` path as a failed toggle attempt, revealing the existing below-group instructions line (`console.groq.com/keys` link via `open_groq_keys_page`) — so there are now two ways to reach the same instructions. `InfoTip`'s "?" glyph variant is unused again but kept on the component for future reuse; only the Advanced page's "i" tooltips use `InfoTip` now.
 
+- v1.0.0 release bundle (2026-09-18), from the plan at `~/.claude/plans/audibl-ver-1-is-sprightly-ladybug.md`: version bumped to 1.0.0 (`tauri.conf.json`, `Cargo.toml`, `package.json`); `Info.plist` gained copyright and the Productivity category; `tauri.conf.json` `bundle` gained `copyright`/`category`/`shortDescription` and a drag-to-Applications DMG layout (`macOS.dmg`); `bun run release` builds the Apple Silicon `.app` + `.dmg` (see "Release build"). Signing stays ad-hoc (no Developer ID on this Mac), so it is not notarized; `INSTALL.md` tells testers how to get past Gatekeeper. First release build verified: LTO links, `codesign --verify --deep --strict` passes, entitlements (mic/audio-input) and hardened runtime are in the signature, Silero lands in `Contents/Resources/resources/`, the installed `/Applications/Audibl.app` launches into onboarding (macOS re-asks for Microphone under the new signature).
+- Shortcut start fix (2026-09-18, found on the release build): shortcuts were started only at launch (`lib.rs` `on_ready`) and by `complete_onboarding`. A returning user who grants Accessibility while the app is open goes back to the main window through `App.tsx`'s focus check (`firstMissingStep`), never through Finish, so the `ShortcutManager` never started: `option+space` did nothing and changing the shortcut failed with "shortcuts not initialized" ("Couldn't use that shortcut"). `firstMissingStep` now calls the new `ensure_shortcut` command whenever setup is complete; it runs `on_ready` only if `shortcut::is_initialized` is false, so it is a no-op on every later focus and never touches a capture in progress. This path is common with ad-hoc builds: every update changes the signature, so the Accessibility switch shows on but no longer applies until the user removes Audibl and adds it again.
+- Onboarding outro fixes (2026-09-18, after Ken saw it stutter and pop in the release app): (1) `App.tsx`'s window-focus re-check now runs only from the main window (`onboarding === null`). For a returning user it used to stay active during onboarding, so any focus event could swap to the main window mid-outro. Release and dev share settings, so Ken's release run was a returning-user run. (2) The italic Newsreader face is now imported (`@fontsource-variable/newsreader/wght-italic.css`); before, the slogan rendered upright, because WebKit does not fake italic for this variable font. `finish` preloads it with `document.fonts.load` during the card fade-out, so the slogan never swaps fonts mid-fade. (3) The slogan transitions `opacity,translate`, not `opacity,transform`: Tailwind v4 `translate-y-*` sets the CSS `translate` property, so the 8px rise never animated. A 60 fps screen recording of the new-user outro in the release app measured the fades as smooth before these fixes; Ken confirmed the outro works after them.
+
 ### Not yet verified (run by hand)
+
+- The installed release build: Ken confirmed on 2026-09-18 that it works after re-granting Accessibility (the `ensure_shortcut` path, shortcut change). Still open: Launch on Startup (`SMAppService` may refuse an ad-hoc app) and a first launch on a second Mac from the DMG.
 
 - Fresh onboarding on a clean data dir, Wi-Fi off mid-download (Retry resumes), quit mid-download and relaunch, deleting the model after onboarding.
 - General page Groq key UX after its move off Advanced: invalid/unreachable errors, redacted field, no-key warning (position/fade-in below the group, link opens the browser), Replace/Remove (visual pass + Vietnamese copy).
@@ -126,6 +132,19 @@ bun scripts/generate-icons.ts      # regenerate placeholder app + tray icons
 # (convert: afconvert -f WAVE -d LEI16@16000 -c 1 in.m4a out.wav). BENCH_LANG=vi|en forces a language.
 cd src-tauri && cargo run --release --example bench -- <model.gguf> <clips-dir> [<model2.gguf> ...]
 ```
+
+## Release build
+
+```bash
+bun run release   # tauri build --target aarch64-apple-darwin (~3 min clean)
+```
+
+Output in `src-tauri/target/aarch64-apple-darwin/release/bundle/`: `macos/Audibl.app` (~30 MB) and `dmg/Audibl_1.0.0_aarch64.dmg` (~13 MB). The 1.4 GB model is not bundled; onboarding downloads it. Apple Silicon only; no auto-updater.
+
+- **Signing is ad-hoc** (`signingIdentity: "-"`), hardened runtime on, entitlements from `Entitlements.plist`. Not notarized, so a downloaded DMG hits Gatekeeper; `INSTALL.md` has the "Open Anyway" / `xattr -dr com.apple.quarantine` steps for testers.
+- Every rebuild changes the ad-hoc signature, so macOS re-asks for Microphone and Accessibility each time. The release app and the dev build are separate TCC entries but share app data, logs and the Keychain entry (same identifier) and the single-instance lock — quit one before launching the other.
+- **To ship signed + notarized** (needs the Apple Developer Program): install a "Developer ID Application" certificate, then build with `APPLE_SIGNING_IDENTITY="Developer ID Application: … (TEAMID)"` plus either `APPLE_ID`/`APPLE_PASSWORD` (app-specific password)/`APPLE_TEAM_ID` or `APPLE_API_KEY`/`APPLE_API_ISSUER`/`APPLE_API_KEY_PATH`. The env var overrides `signingIdentity` in `tauri.conf.json`; Tauri notarizes and staples automatically.
+- Bump the version in `tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json` together; the DMG name follows it.
 
 Dev builds compile `transcribe-cpp-sys`, `sha2`, `rubato` at opt-level 3 (see `Cargo.toml`); unoptimized they make transcription and model verification far slower.
 

@@ -36,6 +36,9 @@ async function firstMissingStep(
   if (!mic) return "microphone";
   if (!ax) return "accessibility";
   if (model.state !== "ready") return "model";
+  // Permissions granted while the app was open skip `complete_onboarding`,
+  // which is what normally starts the shortcuts.
+  await commands.ensureShortcut();
   return null;
 }
 
@@ -60,16 +63,18 @@ function App() {
   }, [onboardingComplete]);
 
   // The backend opens the window on the download screen when the shortcut
-  // is pressed without a model.
+  // is pressed without a model. Only checked from the main window: while
+  // onboarding is on screen its own polls move it along, and swapping it out
+  // here would cut the Finish outro short.
   useEffect(() => {
     const onFocus = () => {
-      if (onboardingComplete) {
+      if (onboardingComplete && onboarding === null) {
         firstMissingStep(true).then(setOnboarding);
       }
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [onboardingComplete]);
+  }, [onboardingComplete, onboarding]);
 
   // Set while onboarding is on screen, so the main window fades in after its
   // outro but appears at once on an ordinary launch.

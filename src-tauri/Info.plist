@@ -4,5 +4,9 @@
 <dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>Audibl records your voice to transcribe it locally on this Mac.</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>© 2026 Ken Nguyen</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.productivity</string>
 </dict>
 </plist>

@@ -103,6 +103,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::start_model_download,
             commands::cancel_model_download,
             commands::complete_onboarding,
+            commands::ensure_shortcut,
             commands::quit_app,
             commands::change_shortcut,
             commands::start_shortcut_capture,

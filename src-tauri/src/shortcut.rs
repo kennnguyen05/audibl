@@ -232,6 +232,10 @@ fn manager_thread(app: AppHandle, commands: Receiver<Command>, ready: Sender<Res
 // App-level helpers
 // ---------------------------------------------------------------------------
 
+pub fn is_initialized(app: &AppHandle) -> bool {
+    app.try_state::<ShortcutManager>().is_some()
+}
+
 /// Starts the backend and registers the Transcribe Shortcut. Idempotent.
 pub fn init(app: &AppHandle) {
     if app.try_state::<ShortcutManager>().is_none() {
