@@ -1,6 +1,6 @@
 [package]
 name = "audible"
-version = "1.0.0"
+version = "1.0.1"
 description = "Audibl: voice-to-text dictation for macOS"
 authors = ["Ken Nguyen"]
 license = "MIT"
