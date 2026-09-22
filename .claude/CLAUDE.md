@@ -212,7 +212,7 @@ Heavier sibling of `onboarding-test`: `rm -rf` the whole `~/Library/Application 
 - Fresh onboarding on a clean data dir: Wi-Fi off mid-download (Retry resumes), quit mid-download and relaunch, deleting the model after onboarding.
 - Groq key UX on General: invalid/unreachable errors, redacted field, no-key warning, Replace/Remove — visual pass plus Vietnamese copy.
 - Interface Language switch updating main window, overlay and tray live; Vietnamese-locale first launch.
-- Show Menu Bar Icon / Start Hidden interaction; `AUDIBLE_UNLOAD_SECS=30` unload/reload in the log.
+- Show Menu Bar Icon / Start Hidden interaction.
 - Vietnamese copy review by Ken.
 - The tray icon in a light menu bar; the app icon in the Dock and Finder.
 - The On/Off chimes by ear, with Mute While Recording on and off, and whether the On chime leaks into the transcript.
