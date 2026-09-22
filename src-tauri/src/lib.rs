@@ -182,10 +182,11 @@ pub fn run() {
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("/".into()))
                 .title("Audibl")
                 // Fixed size: every page is laid out for this one window, so
-                // there is nothing for a resize to reflow. 712 is General's
+                // there is nothing for a resize to reflow. 648 is General's
                 // full height (both cards, no warning) plus main's pb-10, so
-                // that page never scrolls.
-                .inner_size(900.0, 712.0)
+                // that page never scrolls. General is still the tallest page:
+                // Advanced ends around 489.
+                .inner_size(900.0, 648.0)
                 .resizable(false)
                 .maximizable(false)
                 .title_bar_style(tauri::TitleBarStyle::Overlay)

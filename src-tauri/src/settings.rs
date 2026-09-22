@@ -18,6 +18,9 @@ pub const DEFAULT_SHORTCUT: &str = "option+space";
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ActivationMode {
+    /// Hold the shortcut to talk, or tap it to keep recording until the next
+    /// press. The press length decides (`coordinator::HOLD_THRESHOLD`).
+    Auto,
     Hold,
     Toggle,
 }
@@ -78,7 +81,7 @@ impl Default for AppSettings {
         Self {
             onboarding_complete: false,
             shortcut: DEFAULT_SHORTCUT.to_string(),
-            activation_mode: ActivationMode::Hold,
+            activation_mode: ActivationMode::Auto,
             selected_microphone: None,
             selected_channel: None,
             mute_while_recording: false,
@@ -221,7 +224,7 @@ mod tests {
         });
         let salvaged = salvage_settings(&stored);
         assert!(salvaged.start_hidden);
-        assert_eq!(salvaged.activation_mode, ActivationMode::Hold);
+        assert_eq!(salvaged.activation_mode, ActivationMode::Auto);
     }
 
     #[test]

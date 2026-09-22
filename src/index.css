@@ -21,15 +21,36 @@
   --color-text: #f5f1ea;
   --color-muted: #9a9186;
 
-  /* The only saturated color in the app. It marks exactly one thing per
-     screen: what is focused, what is on, or what is listening. */
-  --color-accent: #e8b33c;
+  /* The accent marks exactly one thing per screen: what is focused, what is
+     on, or what is listening. It is a brightness highlight, not a hue — one
+     step of light above the surface ladder, so the palette stays neutral. */
+  --color-accent: #f5f1ea;
+  /* A caution, not an accent: the "Magic Touch needs a Groq key" line on
+     General is its only user. Amber, so it reads as "not set up yet" rather
+     than as the error --color-danger marks. */
   --color-warning: #e8b33c;
+  /* Errors and the destructive Button/IconButton variant. */
   --color-danger: #e8705a;
   /* The overlay's recording light only. A true red, because it has to read as
      "the microphone is open" against whatever window it floats over. */
   --color-record: #e5484d;
   --color-success: #7fbf7a;
+
+  /* The page-title neon. The core is a true white — brighter than
+     --color-text, because a neon tube's centre is blown out — and the halo a
+     cool white, the one cool cast in a warm palette. Both exist only for
+     .title-glow below; nothing else may use them. */
+  --color-title-core: #ffffff;
+  --color-title-halo: #b9d8ff;
+
+  /* Glass hairlines. On a translucent surface the opaque --color-border reads
+     as a drawn line rather than an edge catching light, so every border that
+     sits on glass uses these instead. */
+  --color-hairline: rgb(245 241 234 / 0.08);
+
+  /* Blur is spent on containers only — see the .glass-* block below. */
+  --blur-glass: 28px;
+  --blur-glass-strong: 40px;
 
   /* Both tokens resolve to the one family, so `font-sans` and `font-serif`
      stay valid utilities and no rule can reintroduce a second typeface. */
@@ -38,6 +59,7 @@
 
   /* Radius encodes scale rather than being applied uniformly: containers,
      then controls, then pills. */
+  --radius-chip: 6px;
   --radius-control: 8px;
   --radius-card: 14px;
 
@@ -59,6 +81,10 @@
   --text-2xl--line-height: 36px;
   --text-3xl: 38px;
   --text-3xl--line-height: 44px;
+  /* The sidebar's brand lockup: a notch under the page title it sits beside,
+     so the rail reads as the app's name and the column as the page. */
+  --text-wordmark: 26px;
+  --text-wordmark--line-height: 32px;
   /* The onboarding outro's slogan, alone on the screen. */
   --text-display: 56px;
   --text-display--line-height: 64px;
@@ -111,6 +137,102 @@ body {
   }
 }
 
+/* The glass ladder. Depth is no longer an opaque surface ladder but a set of
+   translucent panes over the animated shader background, each admitting a
+   different amount of it. The four classes below are the only definitions of
+   that recipe; nothing else may mix its own glass.
+
+   Blur belongs to containers, never to the controls inside them. A
+   backdrop-filter element nested in another one samples only its ancestor's
+   already-blurred result, so a second blur buys nothing visually and costs a
+   GPU pass per control. .glass-control is therefore translucent-only and
+   simply lets its card's glass show through. */
+@layer components {
+  /* The rail anchors the window, so it is the densest pane. */
+  .glass-rail {
+    background: color-mix(in oklab, var(--color-sidebar) 72%, transparent);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(130%);
+    backdrop-filter: blur(var(--blur-glass)) saturate(130%);
+  }
+
+  /* Every card on every page, and the onboarding step cards. */
+  .glass-card {
+    background: color-mix(in oklab, var(--color-surface) 52%, transparent);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  }
+
+  /* Things that genuinely float: the InfoTip popover, the confirm dialog.
+     Denser and more blurred, because they must stay readable over a card that
+     is itself already glass, and they keep their drop shadow. */
+  .glass-float {
+    background: color-mix(in oklab, var(--color-surface) 66%, transparent);
+    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(150%);
+    backdrop-filter: blur(var(--blur-glass-strong)) saturate(150%);
+  }
+
+  /* Inline controls. No backdrop-filter, by design. */
+  .glass-control {
+    background: color-mix(in oklab, var(--color-control) 58%, transparent);
+  }
+
+  /* An inset well: the Segmented track, a form row inside a card. Darker than
+     its parent rather than lighter, so it reads as carved in. */
+  .glass-well {
+    background: color-mix(in oklab, var(--color-sidebar) 34%, transparent);
+  }
+
+  /* The page title, lit like a neon tube. Two halves, and they need each
+     other: the glow itself, and the dark field it is read against.
+
+     A halo only reads as light if what surrounds it is darker than the halo's
+     faintest ring, and a page title sits on the bare shader, whose bright
+     bands drift right through that range. So the stack below is in two parts.
+     The first five shadows are the tube: a tight white core, then wider and
+     cooler rings. The rest are the field — black, and listed last precisely
+     because the first shadow given paints on top, so everything after the
+     tube paints beneath it. Being shadows of the same glyphs, the field is
+     cut to the letterforms and blurred outward from them, rather than a plate
+     the text sits on.
+
+     The black blurs repeat because text-shadow has no spread: one pass at a
+     wide radius is far too faint to hide a bright band, and stacking the same
+     blur is the only way to build density. Shadows cost no layout, so all of
+     this spills past the title's box without moving anything below it.
+
+     Every radius is in em, not px, because the class lights two sizes: the
+     30px page titles and the 56px onboarding slogan. A fixed px glow would
+     read as a tube around the small one and a thin outline around the big
+     one; in em the tube keeps the same thickness relative to the letterform
+     at either size. */
+  .title-glow {
+    color: var(--color-title-core);
+    text-shadow:
+      0 0 0.03em rgb(255 255 255 / 0.95),
+      0 0 0.3em rgb(255 255 255 / 0.6),
+      0 0 0.66em color-mix(in oklab, var(--color-title-halo) 85%, transparent),
+      0 0 1.46em color-mix(in oklab, var(--color-title-halo) 58%, transparent),
+      0 0 2.93em color-mix(in oklab, var(--color-title-halo) 34%, transparent),
+      0 0 0.53em rgb(0 0 0 / 0.95),
+      0 0 0.53em rgb(0 0 0 / 0.95),
+      0 0 1em rgb(0 0 0 / 0.92),
+      0 0 1em rgb(0 0 0 / 0.92),
+      0 0 1.73em rgb(0 0 0 / 0.85),
+      0 0 1.73em rgb(0 0 0 / 0.85),
+      0 0 2.8em rgb(0 0 0 / 0.75),
+      0 0 2.8em rgb(0 0 0 / 0.75),
+      0 0 4em rgb(0 0 0 / 0.6);
+  }
+}
+
+/* Dims the shader so text stays legible over the brightest bands of the field.
+   This one number is the legibility knob for the whole app. It is set by the
+   worst case — a section heading like "Text and language", which sits on the
+   bare background with no card under it — not by how the cards look. */
+.shader-veil {
+  background: color-mix(in oklab, var(--color-bg) 55%, transparent);
+}
+
 /* One visible focus treatment for the whole app. Nothing may set
    outline: none without providing its own. */
 :focus-visible {
@@ -146,7 +268,40 @@ body {
   animation: fade-in 500ms ease-out;
 }
 
-/* The overlay's traveling sweep, the app's one piece of ambient motion. */
+/* Tab changes. The content column is keyed on the page, so switching tabs
+   remounts it and replays this. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The confirm dialog arriving over its blurred scrim. */
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-dialog-enter {
+  animation: dialog-enter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The overlay's traveling sweep. */
 @keyframes sweep {
   from {
     transform: translateX(-100%);

@@ -8,7 +8,7 @@ Audibl is a voice-to-text dictation app for macOS. Press a shortcut in any app, 
 
 ## Features
 
-- **One shortcut, two modes.** Hold: hold the shortcut while you speak and release to paste. Toggle: press to start, then Return pastes and Esc cancels. The default shortcut is Option + Space.
+- **One shortcut, three modes.** Auto (the default): hold the shortcut while you speak and release to paste, or tap it and recording keeps going until you tap again. Hold: hold to talk, release to paste. Toggle: tap to start, tap again to paste. Esc cancels in every mode. The default shortcut is Option + Space.
 - **Local transcription.** Qwen3-ASR 1.7B runs on the GPU through Metal. It detects English or Vietnamese automatically, including mixed speech.
 - **Dictionary.** Custom words fix names and terms the model misspells. Replacements turn a spoken phrase into fixed text.
 - **Filler removal.** Removes "um", "uh", "ờ", "ừm" and repeated words.
@@ -53,10 +53,10 @@ cd src-tauri && cargo test      # Rust unit tests
 
 ## Credits
 
-- [Handy](https://github.com/cjpais/Handy) (MIT) is the architectural reference. Audibl ports its audio capture, voice activity detection, shortcut handling, overlay and paste code. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+- [Handy](https://github.com/cjpais/Handy) (MIT) is the architectural reference. Audibl ports its audio capture, voice activity detection, shortcut handling, overlay and paste code. See [THIRD_PARTY_NOTICES.md](Projects/AI/Audible/THIRD_PARTY_NOTICES.md).
 - [Qwen3-ASR](https://huggingface.co/Qwen) is the speech model.
 - Built with [Tauri](https://tauri.app).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](Projects/AI/Audible/node_modules/ms/license.md)

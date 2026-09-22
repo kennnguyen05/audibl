@@ -218,7 +218,12 @@ shortcutCaptureEvent: "shortcut-capture-event"
 
 /** user-defined types **/
 
-export type ActivationMode = "hold" | "toggle"
+export type ActivationMode = 
+/**
+ * Hold the shortcut to talk, or tap it to keep recording until the next
+ * press. The press length decides (`coordinator::HOLD_THRESHOLD`).
+ */
+"auto" | "hold" | "toggle"
 export type AppLanguage = "en" | "vi"
 export type AppSettings = { onboarding_complete: boolean; shortcut: string; activation_mode: ActivationMode; 
 /**

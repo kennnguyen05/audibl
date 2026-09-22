@@ -4,7 +4,7 @@
 use crate::audio::AudioManager;
 use crate::coordinator::{Coordinator, Effect, Input};
 use crate::overlay::{self, OverlayState};
-use crate::settings::{get_settings, ActivationMode};
+use crate::settings::get_settings;
 use crate::sfx::{self, Sound};
 use crate::shortcut;
 use crate::transcription::{TranscribeError, TranscriptionManager};
@@ -37,14 +37,14 @@ fn send(app: &AppHandle, input: Input) {
 
 pub fn run_effect(app: &AppHandle, effect: Effect) {
     match effect {
-        Effect::StartRecording { session, mode } => start(app, session, mode),
+        Effect::StartRecording { session, .. } => start(app, session),
         Effect::FinishRecording { session } => finish(app, session),
         Effect::CancelRecording { session } => cancel_recording(app, session),
         Effect::CancelProcessing { session } => cancel_processing(app, session),
     }
 }
 
-fn start(app: &AppHandle, session: u64, mode: ActivationMode) {
+fn start(app: &AppHandle, session: u64) {
     // No model (deleted, or the model constant changed): open the download
     // screen instead of recording.
     if !crate::is_setup_complete(app) {
@@ -69,15 +69,11 @@ fn start(app: &AppHandle, session: u64, mode: ActivationMode) {
     app.state::<Arc<TranscriptionManager>>().preload();
 
     shortcut::arm_cancel(app);
-    if mode == ActivationMode::Toggle {
-        shortcut::arm_finish(app);
-    }
     overlay::show(app, OverlayState::Recording);
     tray::set_tray_state(app, TrayIconState::Recording);
 }
 
 fn finish(app: &AppHandle, session: u64) {
-    shortcut::disarm_finish(app);
     let samples = app.state::<AudioManager>().stop_recording();
     sfx::play(app, Sound::Off);
     overlay::show(app, OverlayState::Transcribing);
@@ -133,7 +129,6 @@ fn run_pipeline(app: &AppHandle, session: u64, samples: Vec<f32>) {
 
 fn teardown(app: &AppHandle) {
     shortcut::disarm_cancel(app);
-    shortcut::disarm_finish(app);
     overlay::hide(app);
     tray::set_tray_state(app, TrayIconState::Idle);
 }

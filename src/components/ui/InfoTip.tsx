@@ -35,7 +35,7 @@ export function InfoTip({ text, glyph = "i" }: InfoTipProps) {
       </span>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute top-1/2 z-10 w-64 -translate-y-1/2 rounded-control border border-border bg-surface px-3 py-2 text-sm leading-snug text-text opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 ${
+        className={`pointer-events-none absolute top-1/2 z-10 w-64 -translate-y-1/2 glass-float rounded-control border border-hairline px-3 py-2 text-sm leading-snug text-text opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100 ${
           flip ? "right-6" : "left-6"
         }`}
       >

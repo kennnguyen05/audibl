@@ -114,7 +114,7 @@ export function Onboarding({ initialStep, onDone }: OnboardingProps) {
   };
 
   return (
-    <div className="flex h-full min-h-full flex-col items-center justify-center overflow-y-auto">
+    <div className="relative z-10 flex h-full min-h-full flex-col items-center justify-center overflow-y-auto">
       {/* Nothing renders under the traffic lights, so the strip drags. */}
       <div
         data-tauri-drag-region
@@ -123,7 +123,7 @@ export function Onboarding({ initialStep, onDone }: OnboardingProps) {
       {(phase === "slogan" || phase === "closing") && (
         <p
           aria-live="polite"
-          className={`px-9 text-center text-display italic text-text transition-[opacity,translate] ease-out ${
+          className={`title-glow px-9 text-center text-display italic transition-[opacity,translate] ease-out ${
             phase === "closing" ? "duration-[600ms]" : "duration-[700ms]"
           } ${
             sloganShown && phase === "slogan"
@@ -244,7 +244,7 @@ function StepCard({
   const expanded = open ?? state === "current";
   return (
     <section
-      className={`rounded-card border border-border bg-surface px-5 py-4 ${
+      className={`glass-card rounded-card border border-hairline px-5 py-4 transition-opacity duration-300 ${
         state === "upcoming" ? "opacity-40" : ""
       }`}
     >
@@ -463,7 +463,7 @@ function Progress({
   const percent = total > 0 ? Math.floor((downloaded / total) * 100) : 0;
   return (
     <div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-control">
+      <div className="glass-control h-1.5 overflow-hidden rounded-full">
         <div
           className="h-full rounded-full bg-accent transition-[width]"
           style={{ width: `${percent}%` }}

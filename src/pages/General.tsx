@@ -133,22 +133,17 @@ export function General() {
           <ShortcutInput value={settings.shortcut} />
           <ResetShortcutButton shortcut={settings.shortcut} />
         </Row>
-        <Row label={t("general.activationMode")} stacked>
+        <Row
+          label={t("general.activationMode")}
+          caption={t(`general.${settings.activation_mode}Caption`)}
+        >
           <Segmented<ActivationMode>
-            size="large"
             label={t("general.activationMode")}
             value={settings.activation_mode}
             options={[
-              {
-                value: "hold",
-                label: t("general.hold"),
-                description: t("general.holdCaption"),
-              },
-              {
-                value: "toggle",
-                label: t("general.toggle"),
-                description: t("general.toggleCaption"),
-              },
+              { value: "auto", label: t("general.auto") },
+              { value: "hold", label: t("general.hold") },
+              { value: "toggle", label: t("general.toggle") },
             ]}
             onChange={(mode) => applySettings(commands.setActivationMode(mode))}
           />
@@ -241,7 +236,7 @@ export function General() {
               {t("general.groqApiKey")}
               {hasKey ? (
                 <span className="flex items-center gap-1 text-sm text-success">
-                  <CheckIcon size={14} />
+                  <CheckIcon size={14} className="relative -top-0.5" />
                   {t("general.keyStatusSaved")}
                 </span>
               ) : (

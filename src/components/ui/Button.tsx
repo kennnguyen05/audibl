@@ -16,8 +16,8 @@ interface ButtonProps {
 // on dark, maximum contrast means a near-white fill.
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-text text-sidebar hover:bg-white",
-  secondary: "border border-border bg-control text-text hover:border-muted",
-  ghost: "text-muted hover:text-text hover:bg-control",
+  secondary: "glass-control border border-hairline text-text hover:border-muted",
+  ghost: "text-muted hover:text-text hover:bg-control/50",
   danger: "text-danger hover:bg-danger/10",
 };
 
@@ -34,7 +34,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-control px-3.5 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 ${
+      className={`inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-control px-3.5 text-sm font-medium transition-colors duration-200 disabled:pointer-events-none disabled:opacity-40 ${
         VARIANTS[variant]
       } ${block ? "w-full" : ""}`}
     >
@@ -53,7 +53,7 @@ interface IconButtonProps {
 }
 
 const ICON_VARIANTS = {
-  ghost: "hover:bg-control hover:text-text",
+  ghost: "hover:bg-control/60 hover:text-text",
   danger: "hover:bg-danger/10 hover:text-danger",
   bare: "hover:text-text",
 };
@@ -73,7 +73,7 @@ export function IconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted transition-colors disabled:pointer-events-none disabled:opacity-30 ${ICON_VARIANTS[variant]}`}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-control text-muted transition-colors duration-200 disabled:pointer-events-none disabled:opacity-30 ${ICON_VARIANTS[variant]}`}
     >
       {children}
     </button>

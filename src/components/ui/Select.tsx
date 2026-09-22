@@ -24,7 +24,7 @@ export function Select({ value, options, onChange, label }: SelectProps) {
         style={{
           width: `clamp(6rem, ${selectedLabel.length}ch + 2.75rem, 15rem)`,
         }}
-        className="h-8 appearance-none truncate rounded-control border border-border bg-control py-0 pl-3 pr-8 text-sm leading-8 text-text transition-colors hover:border-muted"
+        className="glass-control h-8 appearance-none truncate rounded-control border border-hairline py-0 pl-3 pr-8 text-sm leading-8 text-text transition-colors duration-200 hover:border-muted"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

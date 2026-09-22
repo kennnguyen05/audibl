@@ -93,8 +93,8 @@ function ShortcutKeycaps({ shortcut }: { shortcut: string }) {
   const keys = parseShortcut(shortcut);
   return (
     // The modifier glyphs come from the system font's fallback, whose ink
-    // sits about a pixel above the line box's centre; the nudge centres it.
-    <span className="flex translate-y-px items-center" aria-hidden="true">
+    // sits a few pixels above the line box's centre; the nudge centres it.
+    <span className="flex translate-y-[3px] items-center" aria-hidden="true">
       {keys.map((k) => (
         <Keycap key={k.id} spaced={k.display.length > 1}>
           {k.display}
@@ -198,10 +198,10 @@ export function ShortcutInput({ value }: ShortcutInputProps) {
               : t("general.pressKeys")
             : formatShortcut(value)
         }
-        className={`flex h-7 w-fit items-center justify-center rounded-control border bg-control px-2.5 transition-colors ${
+        className={`glass-control flex h-7 w-fit items-center justify-center rounded-control border px-2.5 transition-colors duration-200 ${
           capturing
             ? "border-accent text-accent"
-            : "border-border text-text hover:border-muted"
+            : "border-hairline text-text hover:border-muted"
         }`}
       >
         {capturing ? (

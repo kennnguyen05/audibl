@@ -7,8 +7,8 @@ interface GroupProps {
   children: ReactNode;
 }
 
-/** A card of divided rows. Cards carry no shadow — depth is the surface
- *  ladder (sidebar -> bg -> surface) plus a 1px border. */
+/** A card of divided rows. Cards carry no shadow — depth is the glass itself:
+ *  a translucent pane over the shader background plus a hairline edge. */
 export function Group({ title, action, children }: GroupProps) {
   return (
     <section className="mb-7 last:mb-0">
@@ -22,7 +22,7 @@ export function Group({ title, action, children }: GroupProps) {
           {action}
         </header>
       )}
-      <div className="divide-y divide-border overflow-hidden rounded-card border border-border bg-surface">
+      <div className="divide-y divide-hairline overflow-hidden rounded-card border border-hairline glass-card">
         {children}
       </div>
     </section>
@@ -77,9 +77,10 @@ export function EmptyRow({ children }: { children: ReactNode }) {
   );
 }
 
+/* .title-glow in index.css carries both the neon and the dark field under it. */
 export function PageTitle({ children }: { children: ReactNode }) {
   return (
-    <h1 className="mb-6 text-2xl font-normal tracking-tight text-text">
+    <h1 className="title-glow mb-6 text-2xl font-normal tracking-tight">
       {children}
     </h1>
   );
@@ -95,7 +96,7 @@ export function PageHeader({
 }) {
   return (
     <div className="mb-6 flex items-center justify-between gap-4">
-      <h1 className="text-2xl font-normal tracking-tight text-text">
+      <h1 className="title-glow text-2xl font-normal tracking-tight">
         {title}
       </h1>
       {action}

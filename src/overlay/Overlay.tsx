@@ -117,7 +117,7 @@ export function Overlay() {
         ? t("overlay.transcribing")
         : null;
 
-  // One row of bars, drawn identically for the base layer and for the amber
+  // One row of bars, drawn identically for the base layer and for the bright
   // highlight the sweep reveals — identical geometry is what makes the
   // highlight look like the bars lighting up rather than a shape on top.
   const barRow = (fill: string) => (

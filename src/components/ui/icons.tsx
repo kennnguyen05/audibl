@@ -88,12 +88,30 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function PlusCircleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 5.25v5.5M5.25 8h5.5" />
+    </Icon>
+  );
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M2.75 4.25h10.5M6.5 4.25V3a.75.75 0 0 1 .75-.75h1.5A.75.75 0 0 1 9.5 3v1.25" />
       <path d="M4.25 4.25 4.75 13a.75.75 0 0 0 .75.7h5a.75.75 0 0 0 .75-.7l.5-8.75" />
       <path d="M6.75 7v4M9.25 7v4" />
+    </Icon>
+  );
+}
+
+export function PencilIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M11.4 2.35a1.63 1.63 0 0 1 2.3 2.3L5.6 12.75l-3.1.8.8-3.1z" />
+      <path d="M10.25 3.5l2.3 2.3" />
     </Icon>
   );
 }

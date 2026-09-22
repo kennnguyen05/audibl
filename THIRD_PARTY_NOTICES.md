@@ -67,3 +67,29 @@ supporting documentation. Kevin Atkinson makes no representations
 about the suitability of this array for any purpose. It is provided
 "as is" without express or implied warranty.
 ```
+
+## Paper Shaders
+
+`src/shaders/plasma.ts` contains the "Plasma" fragment shader, made with the
+21st.dev Shader Builder on the same scaffold — palette mixing, OKLab, the post
+chain, the cursor modes — that Audibl's earlier "Metaballs" background took
+from [Paper Shaders](https://shaders.paper.design)
+([source](https://github.com/paper-design/shaders)), licensed under the Apache
+License 2.0. The GLSL is kept verbatim; only the uniform values Audibl feeds it
+differ.
+
+```
+Copyright (c) Paper
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

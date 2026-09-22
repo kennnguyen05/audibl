@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Capabilities for the main window and the recording overlay",
   "windows": ["main", "recording_overlay"],
-  "permissions": ["core:default", "os:default", "macos-permissions:default"]
+  "permissions": ["core:default", "core:window:allow-start-dragging", "os:default", "macos-permissions:default"]
 }

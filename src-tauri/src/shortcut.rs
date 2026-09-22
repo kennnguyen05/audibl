@@ -1,5 +1,5 @@
-//! Global keys: the Transcribe Shortcut plus Esc (cancel) and Return (finish),
-//! which are registered only while they apply.
+//! Global keys: the Transcribe Shortcut plus Esc (cancel), which is registered
+//! only while a dictation is running.
 //!
 //! Primary backend is handy-keys, a CGEventTap that swallows registered keys
 //! and supports modifier-only and fn combos. If the tap cannot start, Audibl
@@ -28,9 +28,7 @@ use tauri_specta::Event;
 
 pub const TRANSCRIBE: &str = "transcribe";
 pub const CANCEL: &str = "cancel";
-pub const FINISH: &str = "finish";
 const CANCEL_KEY: &str = "escape";
-const FINISH_KEY: &str = "return";
 
 enum Command {
     Register {
@@ -72,7 +70,6 @@ fn route_event(app: &AppHandle, id: &str, pressed: bool) {
         (TRANSCRIBE, true) => coordinator.send(Input::ShortcutPressed),
         (TRANSCRIBE, false) => coordinator.send(Input::ShortcutReleased),
         (CANCEL, true) => coordinator.send(Input::Cancel),
-        (FINISH, true) => coordinator.send(Input::Finish),
         _ => {}
     }
 }
@@ -269,16 +266,6 @@ pub fn arm_cancel(app: &AppHandle) {
 
 pub fn disarm_cancel(app: &AppHandle) {
     unregister(app, CANCEL);
-}
-
-pub fn arm_finish(app: &AppHandle) {
-    if let Err(e) = register(app, FINISH, FINISH_KEY) {
-        warn!("Failed to register Return: {e}");
-    }
-}
-
-pub fn disarm_finish(app: &AppHandle) {
-    unregister(app, FINISH);
 }
 
 /// Swaps the Transcribe Shortcut, restoring the old one if the new one fails.

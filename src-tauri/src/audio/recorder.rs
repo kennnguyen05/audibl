@@ -21,9 +21,9 @@ use cpal::{
 };
 use rtrb::{Consumer, Producer, RingBuffer};
 
+use super::level::LevelMeter;
 use super::resampler::FrameResampler;
 use super::vad::{VadFrame, VoiceActivityDetector, SAMPLE_RATE};
-use super::level::LevelMeter;
 
 enum Cmd {
     Start,

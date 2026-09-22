@@ -1,7 +1,11 @@
 //! Text pipeline after transcription:
-//! filler removal (if on) → custom-word correction → replacements
-//! (case-sensitive only when Magic Touch is on) → Magic Touch
-//! (if on) → output for paste and history.
+//! filler removal (if on) → custom-word correction → replacements → Magic
+//! Touch (if on) → dictionary spelling → output for paste and history.
+//!
+//! The spelling pass runs last, on whichever text won, so a custom word always
+//! reaches the user written the way they typed it. It is given the replacement
+//! values inserted locally, which it leaves whole: those were already typed by
+//! the user and are promised verbatim to the Groq step as well.
 
 use crate::settings::get_settings;
 use crate::text::{dictionary, filler};
@@ -22,14 +26,13 @@ pub fn process_local(
     remove_fillers: bool,
     custom_words: &[String],
     replacements: &[crate::settings::Replacement],
-    case_sensitive_replacements: bool,
 ) -> (String, Vec<String>) {
     let mut text = dictionary::nfc(text);
     if remove_fillers {
         text = filler::remove_filler_words(&text);
     }
     text = dictionary::apply_custom_words(&text, custom_words);
-    dictionary::apply_replacements(&text, replacements, case_sensitive_replacements)
+    dictionary::apply_replacements(&text, replacements)
 }
 
 /// `None` when the session was cancelled mid-pipeline.
@@ -45,9 +48,6 @@ pub fn process(
         settings.remove_filler_words,
         &settings.custom_words,
         &settings.replacements,
-        // The rule follows the setting, not the outcome: matching stays
-        // case-sensitive even if the Groq call later fails.
-        settings.clean_and_reformat,
     );
 
     if !crate::actions::is_session_active(session) {
@@ -94,7 +94,11 @@ pub fn process(
 
     Some(PipelineOutput {
         raw_text: transcription.text.clone(),
-        final_text,
+        final_text: dictionary::apply_dictionary_spelling(
+            &final_text,
+            &settings.custom_words,
+            &inserted,
+        ),
         app_name: context.app_name,
     })
 }
@@ -123,7 +127,6 @@ mod tests {
             true,
             &["Kubernetes".to_string()],
             &replacements,
-            false,
         );
         assert_eq!(text, "Send the Kubernetes doc to ken@example.com");
         assert_eq!(inserted, vec!["ken@example.com".to_string()]);
@@ -131,7 +134,19 @@ mod tests {
 
     #[test]
     fn filler_removal_can_be_off() {
-        let (text, _) = process_local("um okay", false, &[], &[], false);
+        let (text, _) = process_local("um okay", false, &[], &[]);
         assert_eq!(text, "um okay");
+    }
+
+    /// The filler step capitalizes the first word, so a trigger the user typed
+    /// in lowercase (or in caps) has to match whatever case reaches it.
+    #[test]
+    fn replacement_trigger_survives_capitalization() {
+        let replacements = [Replacement {
+            trigger: "my IG".into(),
+            value: "@hkhang.exe".into(),
+        }];
+        let (text, _) = process_local("my IG is this", true, &[], &replacements);
+        assert_eq!(text, "@hkhang.exe is this");
     }
 }

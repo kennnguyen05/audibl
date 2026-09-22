@@ -1,6 +1,8 @@
 //! Recording overlay: a non-activating NSPanel pill centred above the Dock on
 //! the screen with the mouse cursor. It never takes focus, so the target app
-//! keeps its caret. Ported from Handy (`overlay.rs`, MIT), pill style only.
+//! keeps its caret, and it never takes the cursor either: nothing in it is
+//! clickable, so the panel ignores mouse events and whatever is underneath
+//! stays reachable. Ported from Handy (`overlay.rs`, MIT), pill style only.
 
 use crate::audio::OVERLAY_LABEL;
 use serde::Serialize;
@@ -78,8 +80,23 @@ pub fn create(app: &AppHandle) {
         )
         .build();
     match result {
-        Ok(panel) => panel.hide(),
+        Ok(panel) => {
+            panel.hide();
+            ignore_cursor(app);
+        }
         Err(e) => log::error!("Failed to create recording overlay: {e}"),
+    }
+}
+
+/// Lets clicks through to whatever is under the panel. The panel is 300×56 but
+/// the pill inside is smaller, so without this the transparent slack around it
+/// swallows clicks on the Dock and on anything else near the bottom of the
+/// screen.
+fn ignore_cursor(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
+        if let Err(e) = window.set_ignore_cursor_events(true) {
+            log::warn!("Overlay could not be made click-through: {e}");
+        }
     }
 }
 
@@ -121,6 +138,9 @@ pub fn show(app: &AppHandle, state: OverlayState) {
             let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition { x, y }));
         }
         let _ = window.show();
+        // Re-applied on every show: a panel ordered back in must never start
+        // taking clicks again.
+        ignore_cursor(&handle);
         let _ = handle.emit_to(
             OVERLAY_LABEL,
             "show-overlay",
