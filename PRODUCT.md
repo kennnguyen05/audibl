@@ -12,7 +12,7 @@ Audibl is a macOS-only desktop app (Tauri 2 + React 18 + Tailwind 4), so its UI 
 
 Primary: bilingual Vietnamese ↔ English speakers who code-switch inside a single sentence and are failed by monolingual dictation. They dictate into whatever app is focused — editor, browser, chat, email — with the app itself never in the foreground. The interaction is: press a shortcut, speak, get text pasted at the cursor. The settings window is visited rarely, usually once during onboarding and afterwards only to edit the Dictionary.
 
-Secondary, not optimized for: privacy-conscious Mac users who want local transcription, and developers comfortable installing a non-notarized DMG.
+Secondary, not optimized for: privacy-conscious Mac users who want local transcription, and developers comfortable building from source.
 
 ## Product Purpose
 
@@ -26,7 +26,7 @@ Vietnamese and English handled unsegregated. The language is auto-detected per u
 
 - The app is used from inside other apps. The main window is closed to the menu bar during real use; the only on-screen UI while dictating is a 300×56 non-interactive overlay pill above the Dock.
 - Recording is driven by one shortcut (default Option + Space) in Auto / Hold / Toggle modes; Esc cancels. Return is deliberately never registered so it always reaches the focused app.
-- macOS gates the product: Microphone and Accessibility permissions, Secure Input (which silently blocks the key tap and only surfaces as a tray warning), and Gatekeeper on the unsigned DMG. Ad-hoc signing means permissions are re-requested after every rebuild.
+- macOS gates the product: Microphone and Accessibility permissions, Secure Input (which silently blocks the key tap and only surfaces as a tray warning), and Gatekeeper on an unnotarized build. Ad-hoc signing means permissions are re-requested after every rebuild.
 - First run is a hard gate: onboarding must complete permissions plus a one-time 1.4 GB model download before the shortcut does anything.
 - Optional Magic Touch sends the transcript, dictionary, frontmost app name and window title to Groq; the key lives in the macOS Keychain.
 
@@ -48,15 +48,15 @@ Vietnamese and English handled unsegregated. The language is auto-detected per u
 
 ## Evidence on Hand
 
-- Real: shipped v1.0.0 app and DMG, the full running UI (`src/pages/`, `src/components/`), the design system in `src/index.css`, both locale files, brand assets above, a model bake-off measured on 15 synthetic clips, and Ken's own mixed-language transcripts replayed in `groq_live_mixed_language_not_translated`.
-- Absent, and not to be invented: user counts, testimonials, press, benchmarks against named competitors, pricing (the app is free and MIT), and any claim of notarization or App Store presence. There is no website or landing page yet.
+- Real: the full running UI (`src/pages/`, `src/components/`), the design system in `src/index.css`, both locale files, brand assets above, a model bake-off measured on 15 synthetic clips, and Ken's own mixed-language transcripts replayed in `groq_live_mixed_language_not_translated`.
+- Absent, and not to be invented: user counts, testimonials, press, benchmarks against named competitors, pricing (the app is free and MIT), and any claim of notarization or App Store presence. There is no public release, website or landing page yet; the app is being refined and ported to other platforms before launch.
 
 ## Product Principles
 
 1. **Invisible in use.** The product is the paste, not the window. Anything that pulls the user's attention to Audibl during a dictation is a defect.
 2. **Mixed language is the default case, not an edge case.** Vietnamese and English in one sentence is what the product is for; nothing may quietly normalize toward one of them.
 3. **Local first, disclosed second.** Audio never leaves the Mac. The one path that sends text out (Magic Touch) is opt-in, key-owned by the user, and states what it sends.
-4. **The first run is the product's hardest moment.** Permissions, a 1.4 GB download and Gatekeeper all stand between install and first success; onboarding carries more design weight than any settings page.
+4. **The first run is the product's hardest moment.** Permissions, a 1.4 GB download and (until notarized) Gatekeeper all stand between install and first success; onboarding carries more design weight than any settings page.
 5. **Correct the first time.** Dictionary, filler removal and spelling enforcement exist so the user never edits after pasting.
 
 ## Accessibility & Inclusion

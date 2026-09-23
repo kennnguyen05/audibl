@@ -16,14 +16,9 @@ Audibl is a voice-to-text dictation app for macOS. Press a shortcut in any app, 
 - **History.** Shows your last 10 dictations. You can copy any of them again.
 - **English or Vietnamese interface.**
 
-## Install
+## Status
 
-Requirements: a Mac with Apple Silicon (M1 or later) and macOS 13 Ventura or newer.
-
-1. Download `Audibl_1.0.0_aarch64.dmg` from the [latest release](../../releases/latest).
-2. Follow [INSTALL.md](INSTALL.md).
-
-This build is not notarized by Apple. On the first launch, macOS blocks it until you allow it. INSTALL.md shows how.
+Audibl is not released yet. There is no download while it is being refined and brought to more platforms. To try it now, build it from source (below).
 
 On the first launch, Audibl asks for Microphone and Accessibility access. Then it downloads the speech model once (1.4 GB).
 
@@ -38,7 +33,7 @@ You need [Bun](https://bun.sh), [Rust](https://rustup.rs) and the Xcode Command 
 ```bash
 bun install
 bun run tauri dev      # run a development build
-bun run release        # build Audibl.app and the DMG (Apple Silicon)
+bun run release        # build a release bundle (Apple Silicon)
 ```
 
 The release output is in `src-tauri/target/aarch64-apple-darwin/release/bundle/`.

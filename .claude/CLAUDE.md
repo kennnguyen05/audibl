@@ -39,9 +39,9 @@ cd src-tauri && cargo run --release --example bench -- <model.gguf> <clips-dir> 
 bun run release   # tauri build --target aarch64-apple-darwin (~3 min clean)
 ```
 
-Output in `src-tauri/target/aarch64-apple-darwin/release/bundle/`: `macos/Audibl.app` (~30 MB) and `dmg/Audibl_1.0.0_aarch64.dmg` (~13 MB). The 1.4 GB model is not bundled; onboarding downloads it. Apple Silicon only; no auto-updater.
+Output in `src-tauri/target/aarch64-apple-darwin/release/bundle/`: `macos/Audibl.app` (~30 MB) and `dmg/Audibl_1.0.0_aarch64.dmg` (~13 MB). The 1.4 GB model is not bundled; onboarding downloads it. Apple Silicon only; no auto-updater. **Nothing is published:** the v1.0.0/v1.0.1 GitHub releases and `INSTALL.md` were withdrawn so Ken can refine the app and add other platforms before launching — don't create a release, attach a DMG or write install docs unless Ken asks.
 
-- **Signing is ad-hoc** (`signingIdentity: "-"`), hardened runtime on, entitlements from `Entitlements.plist`. Not notarized, so a downloaded DMG hits Gatekeeper; `INSTALL.md` has the "Open Anyway" / `xattr -dr com.apple.quarantine` steps for testers.
+- **Signing is ad-hoc** (`signingIdentity: "-"`), hardened runtime on, entitlements from `Entitlements.plist`. Not notarized, so a DMG copied to another Mac hits Gatekeeper ("Open Anyway", or `xattr -dr com.apple.quarantine`).
 - Every rebuild changes the ad-hoc signature, so macOS re-asks for Microphone and Accessibility each time. The release app and the dev build are separate TCC entries but share app data, logs and the Keychain entry (same identifier) and the single-instance lock — quit one before launching the other.
 - **To ship signed + notarized** (needs the Apple Developer Program): install a "Developer ID Application" certificate, then build with `APPLE_SIGNING_IDENTITY="Developer ID Application: … (TEAMID)"` plus either `APPLE_ID`/`APPLE_PASSWORD` (app-specific password)/`APPLE_TEAM_ID` or `APPLE_API_KEY`/`APPLE_API_ISSUER`/`APPLE_API_KEY_PATH`. The env var overrides `signingIdentity` in `tauri.conf.json`; Tauri notarizes and staples automatically.
 - Bump the version in `tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json` together; the DMG name follows it.
