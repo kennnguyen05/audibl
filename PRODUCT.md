@@ -43,7 +43,7 @@ Vietnamese and English handled unsegregated. The language is auto-detected per u
 ## Brand Commitments
 
 - Name: **Audibl** — renamed off "Audible" to avoid the Amazon trademark. The old spelling survives only in internal identifiers (Rust crate, binary, `AUDIBLE_*` env vars). Any new user-facing text uses "Audibl".
-- Existing assets: `brand-assets/Audibl full logo.png`, `brand-assets/Audibl icon.jpg`, the bar mark duplicated in `src/components/ui/icons.tsx` (`AudiblMark`) and `scripts/generate-icons.ts` (`MARK_BARS`), tray PNGs in `src-tauri/resources/`, On/Off chimes in `sfx/`. README tagline: "Be heard. Be Audibl."
+- Existing assets: `brand-assets/Audibl full logo.png`, `brand-assets/Audibl icon.jpg`, the bar mark duplicated in `src/components/ui/icons.tsx` (`AudiblMark`) and `scripts/generate-icons.ts` (`MARK_BARS`), tray PNGs in `src-tauri/resources/`, On/Off chimes in `src-tauri/resources/sfx/`. README tagline: "Be heard. Be Audibl."
 - The user did not mark the name, mark or tagline as un-redesignable; they are the incumbent identity, not a locked one. The trademark constraint on "Audible" is binding regardless.
 
 ## Evidence on Hand
