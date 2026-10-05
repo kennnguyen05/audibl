@@ -10,6 +10,13 @@ use regex::Regex;
 const ENGLISH_FILLERS: &[&str] = &["um", "uh", "uhm", "umm", "er", "ah", "hmm"];
 const VIETNAMESE_FILLERS: &[&str] = &["ờ", "ờm", "ừm", "ưm", "ơ", "hừm"];
 
+/// Digits as they are read out one by one in a phone or order number, where a
+/// repeat ("five five five", "không không") is the number, not a stutter.
+const DIGIT_WORDS: &[&str] = &[
+    "zero", "oh", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "không",
+    "một", "hai", "ba", "bốn", "tư", "năm", "sáu", "bảy", "tám", "chín",
+];
+
 /// One alternation, longest first, with a trailing comma/period and the
 /// spaces around it, so "So, um, yeah" becomes "So, yeah".
 static FILLER_PATTERN: Lazy<Regex> = Lazy::new(|| {
@@ -39,7 +46,8 @@ pub fn remove_filler_words(text: &str) -> String {
 }
 
 /// A word repeated three or more times in a row collapses to one: "I I I think"
-/// becomes "I think". Two repetitions are kept ("very very").
+/// becomes "I think". Two repetitions are kept ("very very"), and so are spoken
+/// digits ("five five five").
 pub fn collapse_stutters(text: &str) -> String {
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut result: Vec<&str> = Vec::with_capacity(words.len());
@@ -48,7 +56,7 @@ pub fn collapse_stutters(text: &str) -> String {
         let word = words[i];
         let lower = word.to_lowercase();
         let mut count = 1;
-        if lower.chars().all(char::is_alphabetic) {
+        if lower.chars().all(char::is_alphabetic) && !DIGIT_WORDS.contains(&lower.as_str()) {
             while i + count < words.len() && words[i + count].to_lowercase() == lower {
                 count += 1;
             }
@@ -120,6 +128,20 @@ mod tests {
         assert_eq!(collapse_stutters("I I I think so"), "I think so");
         assert_eq!(collapse_stutters("em em em em đi"), "em đi");
         assert_eq!(collapse_stutters("very very good"), "very very good");
+    }
+
+    /// A dictated phone or order number repeats digits on purpose.
+    #[test]
+    fn spoken_digit_runs_are_not_stutters() {
+        assert_eq!(
+            remove_filler_words("my number is five five five eight six seven"),
+            "My number is five five five eight six seven"
+        );
+        assert_eq!(
+            collapse_stutters("số của em là không chín không không không tám"),
+            "số của em là không chín không không không tám"
+        );
+        assert_eq!(collapse_stutters("call nine one one one"), "call nine one one one");
     }
 
     #[test]
