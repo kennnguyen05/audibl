@@ -86,7 +86,7 @@ The shell running Claude has Accessibility, so synthetic keys reach the event ta
 4. Read the result with `osascript -e 'tell application "TextEdit" to get text of front document'`.
 
 Screenshot only Audibl's windows: list window ids with `CGWindowListCopyWindowInfo`
-(the overlay is "Audibl Overlay", 300×56, layer 25) and `screencapture -x -o -l<id>`.
+(the overlay is "Audibl Overlay", 340×112, layer 25) and `screencapture -x -o -l<id>`.
 
 ## Leave it running
 

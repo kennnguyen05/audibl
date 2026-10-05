@@ -21,10 +21,15 @@ tauri_panel! {
 
 /// The panel is deliberately larger than the pill drawn inside it: the window
 /// is transparent, and the slack around the pill is what the drop shadow needs
-/// in order not to be clipped.
-const WIDTH: f64 = 300.0;
-const HEIGHT: f64 = 56.0;
-const BOTTOM_OFFSET: f64 = 16.0;
+/// in order not to be clipped. The slack must cover the shadow's reach in
+/// `Overlay.tsx` (32 px below the pill, 22 px to the sides of its widest, 270 px
+/// form); the pill is centred, so the panel is that much taller and wider.
+const WIDTH: f64 = 340.0;
+const HEIGHT: f64 = 112.0;
+/// The pill's own height (`h-10` in `Overlay.tsx`) and how far its bottom edge
+/// sits above the work area, which is what the panel is positioned from.
+const PILL_HEIGHT: f64 = 40.0;
+const PILL_BOTTOM_GAP: f64 = 24.0;
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -88,7 +93,7 @@ pub fn create(app: &AppHandle) {
     }
 }
 
-/// Lets clicks through to whatever is under the panel. The panel is 300×56 but
+/// Lets clicks through to whatever is under the panel. The panel is 340×112 but
 /// the pill inside is smaller, so without this the transparent slack around it
 /// swallows clicks on the Dock and on anything else near the bottom of the
 /// screen.
@@ -124,7 +129,7 @@ fn position(app: &AppHandle) -> Option<(f64, f64)> {
         monitor.position().x as f64 / scale + (monitor.size().width as f64 / scale - WIDTH) / 2.0;
     let work = monitor.work_area();
     let bottom = (work.position.y as f64 + work.size.height as f64) / scale;
-    Some((x, bottom - HEIGHT - BOTTOM_OFFSET))
+    Some((x, bottom - PILL_BOTTOM_GAP - (HEIGHT + PILL_HEIGHT) / 2.0))
 }
 
 pub fn show(app: &AppHandle, state: OverlayState) {

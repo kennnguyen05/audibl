@@ -62,6 +62,12 @@ pub fn set_remove_filler_words(app: AppHandle, enabled: bool) -> AppSettings {
 
 #[tauri::command]
 #[specta::specta]
+pub fn set_keep_in_clipboard(app: AppHandle, enabled: bool) -> AppSettings {
+    update_settings(&app, |s| s.keep_in_clipboard = enabled)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn set_app_language(app: AppHandle, language: AppLanguage) -> AppSettings {
     let settings = update_settings(&app, |s| s.app_language = language);
     tray::sync_tray(&app);

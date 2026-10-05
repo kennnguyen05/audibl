@@ -126,7 +126,8 @@ fn run_pipeline(app: &AppHandle, session: u64, samples: Vec<f32>) {
 
     // Esc must not reach the target app's handling of the paste.
     shortcut::disarm_cancel(app);
-    match crate::paste::paste(app, output.final_text.clone()) {
+    let keep_in_clipboard = crate::settings::get_settings(app).keep_in_clipboard;
+    match crate::paste::paste(app, output.final_text.clone(), keep_in_clipboard) {
         Ok(()) => log::info!("Pasted {} characters", output.final_text.chars().count()),
         Err(e) => log::error!("Paste failed: {e}"),
     }

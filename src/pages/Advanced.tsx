@@ -97,6 +97,22 @@ export function Advanced() {
         <Row
           label={
             <Label
+              text={t("advanced.keepInClipboard")}
+              tip={t("advanced.keepInClipboardTip")}
+            />
+          }
+        >
+          <Toggle
+            label={t("advanced.keepInClipboard")}
+            checked={settings.keep_in_clipboard}
+            onChange={(enabled) =>
+              applySettings(commands.setKeepInClipboard(enabled))
+            }
+          />
+        </Row>
+        <Row
+          label={
+            <Label
               text={t("advanced.interfaceLanguage")}
               tip={t("advanced.interfaceLanguageTip")}
             />

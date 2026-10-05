@@ -86,6 +86,8 @@
     "showMenuBarIconTip": "Hiện Audibl trên thanh menu. Khi ẩn, mở lại Audibl từ Launchpad hoặc Finder.",
     "removeFillerWords": "Bỏ từ đệm",
     "removeFillerWordsTip": "Bỏ các từ đệm như “um”, “uh”, “ờ”, “ừm” và các từ lặp do nói vấp. Xử lý ngay trên máy Mac này.",
+    "keepInClipboard": "Giữ trong bộ nhớ tạm",
+    "keepInClipboardTip": "Sau khi dán, văn bản vẫn nằm trong bộ nhớ tạm để bạn dán lại. Khi tắt, Audibl khôi phục nội dung bạn đã sao chép trước đó.",
     "interfaceLanguage": "Ngôn ngữ giao diện",
     "interfaceLanguageTip": "Chỉ đổi chữ hiển thị trong ứng dụng. Giọng nói luôn được tự nhận diện là tiếng Anh hoặc tiếng Việt."
   },

@@ -70,6 +70,9 @@ pub struct AppSettings {
     pub autostart_enabled: bool,
     pub show_tray_icon: bool,
     pub remove_filler_words: bool,
+    /// Leave the transcript on the clipboard after pasting instead of
+    /// restoring what was there before.
+    pub keep_in_clipboard: bool,
     pub app_language: AppLanguage,
     pub clean_and_reformat: bool,
     pub custom_words: Vec<String>,
@@ -89,6 +92,7 @@ impl Default for AppSettings {
             autostart_enabled: false,
             show_tray_icon: true,
             remove_filler_words: true,
+            keep_in_clipboard: true,
             app_language: AppLanguage::En,
             clean_and_reformat: false,
             custom_words: Vec::new(),
@@ -214,6 +218,7 @@ mod tests {
         assert!(parsed.start_hidden);
         assert_eq!(parsed.shortcut, DEFAULT_SHORTCUT);
         assert!(parsed.remove_filler_words);
+        assert!(parsed.keep_in_clipboard);
     }
 
     #[test]

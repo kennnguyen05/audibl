@@ -86,6 +86,8 @@
     "showMenuBarIconTip": "Show Audibl in the menu bar. When hidden, reopen Audibl from Launchpad or Finder.",
     "removeFillerWords": "Remove Filler Words",
     "removeFillerWordsTip": "Removes fillers like “um”, “uh”, “ờ”, “ừm” and repeated stutters. Done on this Mac.",
+    "keepInClipboard": "Keep in Clipboard",
+    "keepInClipboardTip": "After pasting, leave the text on the clipboard so you can paste it again. When off, Audibl puts back what you had copied before.",
     "interfaceLanguage": "Interface Language",
     "interfaceLanguageTip": "Changes the app's text only. Speech is always detected automatically as English or Vietnamese."
   },

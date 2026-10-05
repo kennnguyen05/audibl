@@ -87,6 +87,7 @@ fn specta_builder() -> Builder<tauri::Wry> {
             commands::set_autostart,
             commands::set_show_tray_icon,
             commands::set_remove_filler_words,
+            commands::set_keep_in_clipboard,
             commands::set_app_language,
             commands::set_clean_and_reformat,
             commands::set_custom_words,

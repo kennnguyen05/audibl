@@ -1,5 +1,6 @@
 //! Paste into the focused app: save the clipboard, write the text, send Cmd+V
-//! with the layout-aware V keycode, then restore the clipboard. Requires the
+//! with the layout-aware V keycode, then restore the clipboard unless the
+//! Keep in Clipboard setting leaves the text there. Requires the
 //! Accessibility permission. Ported from Handy (`clipboard.rs`, `input.rs`,
 //! MIT); Handy's receipt-sequenced "reliable paste" is not ported.
 
@@ -29,21 +30,26 @@ pub fn cursor_location() -> Option<(i32, i32)> {
 }
 
 /// Pastes on the main thread (TIS keyboard layout APIs require it) and waits
-/// for the result.
-pub fn paste(app: &AppHandle, text: String) -> Result<(), String> {
+/// for the result. `keep_in_clipboard` leaves `text` on the clipboard instead
+/// of restoring the previous contents.
+pub fn paste(app: &AppHandle, text: String, keep_in_clipboard: bool) -> Result<(), String> {
     let (tx, rx) = mpsc::channel();
     let handle = app.clone();
     app.run_on_main_thread(move || {
-        let _ = tx.send(paste_on_main(&handle, &text));
+        let _ = tx.send(paste_on_main(&handle, &text, keep_in_clipboard));
     })
     .map_err(|e| e.to_string())?;
     rx.recv().map_err(|e| e.to_string())?
 }
 
-fn paste_on_main(app: &AppHandle, text: &str) -> Result<(), String> {
+fn paste_on_main(app: &AppHandle, text: &str, keep_in_clipboard: bool) -> Result<(), String> {
     let clipboard = app.clipboard();
-    let saved_text = clipboard.read_text().ok().filter(|t| !t.is_empty());
-    let saved_image = if saved_text.is_none() {
+    let saved_text = if keep_in_clipboard {
+        None
+    } else {
+        clipboard.read_text().ok().filter(|t| !t.is_empty())
+    };
+    let saved_image = if saved_text.is_none() && !keep_in_clipboard {
         clipboard.read_image().ok().map(|image| image.to_owned())
     } else {
         None
@@ -69,6 +75,9 @@ fn paste_on_main(app: &AppHandle, text: &str) -> Result<(), String> {
         click
     });
 
+    if keep_in_clipboard {
+        return result;
+    }
     std::thread::sleep(DELAY_BEFORE_RESTORE);
     if let Some(previous) = saved_text {
         let _ = clipboard.write_text(previous);

@@ -29,6 +29,9 @@ async setShowTrayIcon(enabled: boolean) : Promise<AppSettings> {
 async setRemoveFillerWords(enabled: boolean) : Promise<AppSettings> {
     return await TAURI_INVOKE("set_remove_filler_words", { enabled });
 },
+async setKeepInClipboard(enabled: boolean) : Promise<AppSettings> {
+    return await TAURI_INVOKE("set_keep_in_clipboard", { enabled });
+},
 async setAppLanguage(language: AppLanguage) : Promise<AppSettings> {
     return await TAURI_INVOKE("set_app_language", { language });
 },
@@ -233,7 +236,12 @@ selected_microphone: string | null;
 /**
  * Zero-based input channel; `None` mixes all channels down to mono.
  */
-selected_channel: number | null; mute_while_recording: boolean; start_hidden: boolean; autostart_enabled: boolean; show_tray_icon: boolean; remove_filler_words: boolean; app_language: AppLanguage; clean_and_reformat: boolean; custom_words: string[]; replacements: Replacement[] }
+selected_channel: number | null; mute_while_recording: boolean; start_hidden: boolean; autostart_enabled: boolean; show_tray_icon: boolean; remove_filler_words: boolean; 
+/**
+ * Leave the transcript on the clipboard after pasting instead of
+ * restoring what was there before.
+ */
+keep_in_clipboard: boolean; app_language: AppLanguage; clean_and_reformat: boolean; custom_words: string[]; replacements: Replacement[] }
 /**
  * Emitted with the full list after any change.
  */
