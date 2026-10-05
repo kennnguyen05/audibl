@@ -26,7 +26,11 @@ use super::resampler::FrameResampler;
 use super::vad::{VadFrame, VoiceActivityDetector, SAMPLE_RATE};
 
 enum Cmd {
-    Start,
+    /// A gated recording discards input until `Ungate`.
+    Start {
+        gated: bool,
+    },
+    Ungate,
     Stop(mpsc::Sender<Vec<f32>>),
     Shutdown,
 }
@@ -182,12 +186,22 @@ impl AudioRecorder {
         }
     }
 
-    pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn start(&self, gated: bool) -> Result<(), Box<dyn std::error::Error>> {
         let tx = self
             .cmd_tx
             .as_ref()
             .ok_or_else(|| Error::other("Recorder is not open"))?;
-        tx.send(Cmd::Start)?;
+        tx.send(Cmd::Start { gated })?;
+        Ok(())
+    }
+
+    /// Starts keeping input in a gated recording, from this moment on.
+    pub fn ungate(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let tx = self
+            .cmd_tx
+            .as_ref()
+            .ok_or_else(|| Error::other("Recorder is not open"))?;
+        tx.send(Cmd::Ungate)?;
         Ok(())
     }
 
@@ -452,6 +466,7 @@ fn run_consumer(
     stream_error: Arc<AtomicBool>,
 ) {
     let mut recording = false;
+    let mut gated = false;
     let mut error_logged = false;
 
     loop {
@@ -470,13 +485,24 @@ fn run_consumer(
         };
 
         match command {
-            Some(Cmd::Start) => {
+            Some(Cmd::Start { gated: g }) => {
                 transport.overrun_samples.store(0, Ordering::Release);
                 processor.begin_recording();
                 recording = true;
+                gated = g;
+            }
+            Some(Cmd::Ungate) => {
+                // What is still in the ring was captured before the gate opened.
+                while processor.drain(&mut consumer, ChunkDisposition::Discard) > 0 {}
+                gated = false;
             }
             Some(Cmd::Stop(reply)) => {
                 recording = false;
+                let disposition = if gated {
+                    ChunkDisposition::Discard
+                } else {
+                    ChunkDisposition::Capture
+                };
                 // Pause the callback after one boundary block, then drain
                 // everything captured before the pause into this recording.
                 transport.pause_acknowledged.store(false, Ordering::Relaxed);
@@ -485,7 +511,7 @@ fn run_consumer(
                 while !transport.pause_acknowledged.load(Ordering::Acquire)
                     && started.elapsed() < PAUSE_ACK_TIMEOUT
                 {
-                    if processor.drain(&mut consumer, ChunkDisposition::Capture) == 0 {
+                    if processor.drain(&mut consumer, disposition) == 0 {
                         std::thread::sleep(Duration::from_millis(1));
                     }
                 }
@@ -494,7 +520,7 @@ fn run_consumer(
                     log::warn!("Timed out waiting for the microphone callback to pause");
                     stream_error.store(true, Ordering::Release);
                 }
-                while processor.drain(&mut consumer, ChunkDisposition::Capture) > 0 {}
+                while processor.drain(&mut consumer, disposition) > 0 {}
                 processor.dropped_samples += transport.overrun_samples.swap(0, Ordering::AcqRel);
                 let samples = processor.finish_recording();
                 if !timed_out {
@@ -514,7 +540,7 @@ fn run_consumer(
             None => {}
         }
 
-        let disposition = if recording {
+        let disposition = if recording && !gated {
             ChunkDisposition::Capture
         } else {
             ChunkDisposition::Discard

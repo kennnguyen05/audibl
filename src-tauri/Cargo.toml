@@ -51,6 +51,7 @@ keyring = { version = "3.6", features = ["apple-native"] }
 security-framework = "3"
 anyhow = "1.0.95"
 cpal = "0.16.0"
+objc2-core-audio = { version = "0.3", default-features = false, features = ["std", "AudioHardware"] }
 rtrb = "0.4.0"
 rubato = "0.16.2"
 vad-rs = { git = "https://github.com/cjpais/vad-rs", default-features = false }

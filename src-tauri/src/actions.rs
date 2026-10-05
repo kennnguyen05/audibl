@@ -57,13 +57,19 @@ fn start(app: &AppHandle, session: u64) {
     ACTIVE_SESSION.store(session, Ordering::SeqCst);
     crate::context::capture(app);
 
-    if let Err(e) = app.state::<AudioManager>().start_recording() {
-        log::error!("Could not start recording: {e}");
-        end_session(session);
-        send(app, Input::StartFailed);
-        return;
-    }
-    sfx::play(app, Sound::On);
+    let recording = match app.state::<AudioManager>().start_recording() {
+        Ok(recording) => recording,
+        Err(e) => {
+            log::error!("Could not start recording: {e}");
+            end_session(session);
+            send(app, Input::StartFailed);
+            return;
+        }
+    };
+    let handle = app.clone();
+    sfx::play_then(app, Sound::On, move || {
+        handle.state::<AudioManager>().mute_after_chime(recording);
+    });
 
     // Warm the model while the user speaks.
     app.state::<Arc<TranscriptionManager>>().preload();

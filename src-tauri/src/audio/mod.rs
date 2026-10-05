@@ -13,17 +13,24 @@ use crate::settings::get_settings;
 use recorder::AudioRecorder;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager};
 use vad::{SileroVad, SmoothedVad, SAMPLE_RATE, SILERO_THRESHOLD};
 
 pub const OVERLAY_LABEL: &str = "recording_overlay";
 const LEVEL_EMIT_INTERVAL_MS: u64 = 33;
+/// After muting, how long input stays gated so sound already in the output
+/// buffer and the mic's own latency don't reach the recording.
+const MUTE_SETTLE: Duration = Duration::from_millis(50);
 
 pub struct AudioManager {
     app: AppHandle,
     recorder: Mutex<Option<AudioRecorder>>,
     recording: AtomicBool,
+    /// Whether the current recording waits for the mute (Mute While Recording).
+    gated: AtomicBool,
+    /// Counts recordings, so a delayed mute thread only acts on its own.
+    epoch: AtomicU64,
     mute: Mutex<mute::MuteGuard>,
 }
 
@@ -33,6 +40,8 @@ impl AudioManager {
             app: app.clone(),
             recorder: Mutex::new(None),
             recording: AtomicBool::new(false),
+            gated: AtomicBool::new(false),
+            epoch: AtomicU64::new(0),
             mute: Mutex::new(mute::MuteGuard::default()),
         }
     }
@@ -65,7 +74,8 @@ impl AudioManager {
         )
     }
 
-    pub fn start_recording(&self) -> Result<(), String> {
+    /// Returns the recording's id, for `mute_after_chime`.
+    pub fn start_recording(&self) -> Result<u64, String> {
         if self.recording.load(Ordering::SeqCst) {
             return Err("already_recording".into());
         }
@@ -81,26 +91,49 @@ impl AudioManager {
         let device = devices::find_input_device(settings.selected_microphone.as_deref())
             .or_else(|| devices::find_input_device(None));
         recorder.open(device).map_err(|e| e.to_string())?;
-        recorder.start().map_err(|e| e.to_string())?;
+        // With Mute While Recording, input is gated until the output is muted,
+        // so neither the On chime nor other apps' audio is transcribed.
+        let gated = settings.mute_while_recording;
+        recorder.start(gated).map_err(|e| e.to_string())?;
+        let epoch = self.epoch.fetch_add(1, Ordering::SeqCst) + 1;
+        self.gated.store(gated, Ordering::SeqCst);
         self.recording.store(true, Ordering::SeqCst);
         drop(guard);
-
-        // Mute only after the On chime has played. Checking `recording` under
-        // the mute lock means a stop in the meantime (which clears the flag
-        // before it restores) is never followed by a stray mute.
-        if settings.mute_while_recording {
-            let app = self.app.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(crate::sfx::ON_DURATION);
-                let manager = app.state::<AudioManager>();
-                let mut mute = manager.mute.lock().unwrap();
-                if manager.recording.load(Ordering::SeqCst) {
-                    mute.apply();
-                }
-            });
-        }
         log::info!("Recording started");
-        Ok(())
+        Ok(epoch)
+    }
+
+    /// Call when the On chime starts. A gated recording mutes once the chime
+    /// has played, then lets input through. Checking `live` under the mute
+    /// lock means a stop in the meantime (which clears the flag before it
+    /// restores) is never followed by a stray mute.
+    pub fn mute_after_chime(&self, epoch: u64) {
+        if !self.gated.load(Ordering::SeqCst) {
+            return;
+        }
+        let app = self.app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(crate::sfx::ON_DURATION);
+            let manager = app.state::<AudioManager>();
+            let live = || {
+                manager.recording.load(Ordering::SeqCst)
+                    && manager.epoch.load(Ordering::SeqCst) == epoch
+            };
+            {
+                let mut mute = manager.mute.lock().unwrap();
+                if !live() {
+                    return;
+                }
+                mute.apply();
+            }
+            std::thread::sleep(MUTE_SETTLE);
+            let guard = manager.recorder.lock().unwrap();
+            if live() {
+                if let Some(r) = guard.as_ref() {
+                    let _ = r.ungate();
+                }
+            }
+        });
     }
 
     /// Stops capture and returns the VAD-filtered 16 kHz samples.

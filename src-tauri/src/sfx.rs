@@ -12,9 +12,10 @@ use tauri::AppHandle;
 static ON_MP3: &[u8] = include_bytes!("../resources/sfx/On.mp3");
 static OFF_MP3: &[u8] = include_bytes!("../resources/sfx/Off.mp3");
 
-/// Length of the On chime; Mute While Recording waits this long before muting
-/// so the chime is heard.
-pub const ON_DURATION: Duration = Duration::from_millis(600);
+/// Audible length of the On chime (it fades below -55 dB by ~430 ms); Mute
+/// While Recording waits this long after the chime starts before muting, so
+/// the chime is heard.
+pub const ON_DURATION: Duration = Duration::from_millis(450);
 
 #[derive(Clone, Copy)]
 pub enum Sound {
@@ -36,6 +37,15 @@ fn load(bytes: &[u8]) -> Option<Retained<NSSound>> {
 
 /// Plays `sound` without blocking; a repeat restarts it from the beginning.
 pub fn play(app: &AppHandle, sound: Sound) {
+    play_then(app, sound, || {});
+}
+
+/// Like `play`, then runs `started` on the main thread once the sound has
+/// begun. `NSSound::play` blocks while macOS wakes an idle output device
+/// (~220 ms, ~350 ms with the first decode), so a clock started before it
+/// would run ahead of the chime. `started` also runs if the sound failed to
+/// load.
+pub fn play_then(app: &AppHandle, sound: Sound, started: impl FnOnce() + Send + 'static) {
     let _ = app.run_on_main_thread(move || {
         SOUNDS.with(|cell| {
             let mut slot = cell.borrow_mut();
@@ -56,5 +66,6 @@ pub fn play(app: &AppHandle, sound: Sound) {
             target.stop();
             target.play();
         });
+        started();
     });
 }
