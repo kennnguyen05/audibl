@@ -74,6 +74,47 @@ pub fn is_reliably_vietnamese(text: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Segmenting (pure)
+// ---------------------------------------------------------------------------
+
+/// transcribe-cpp caps a Qwen3-ASR run at 256 output tokens (hard-coded), and
+/// a run that reaches the cap fails outright. That is about 1.5 minutes of
+/// English and less of Vietnamese, so longer audio is transcribed in segments
+/// of about this length, which stay well under the cap in either language.
+const SEGMENT_SAMPLES: usize = 20 * 16_000;
+/// Each cut lands at the quietest window within this distance of its even
+/// split point, so it falls between words rather than through one.
+const CUT_SEARCH_SAMPLES: usize = 2 * 16_000;
+/// 20 ms.
+const CUT_WINDOW: usize = 320;
+
+/// Splits audio into near-equal segments of at most about `SEGMENT_SAMPLES`
+/// (plus up to `CUT_SEARCH_SAMPLES`), each cut placed at a quiet moment.
+fn segment_bounds(audio: &[f32]) -> Vec<std::ops::Range<usize>> {
+    let n = audio.len().div_ceil(SEGMENT_SAMPLES).max(1);
+    let mut bounds = Vec::with_capacity(n);
+    let mut start = 0;
+    for i in 1..n {
+        let ideal = audio.len() * i / n;
+        let lo = ideal
+            .saturating_sub(CUT_SEARCH_SAMPLES)
+            .max(start + CUT_WINDOW);
+        let hi = (ideal + CUT_SEARCH_SAMPLES).min(audio.len() - CUT_WINDOW);
+        let cut = (lo..=hi)
+            .step_by(CUT_WINDOW)
+            .min_by(|&a, &b| {
+                let energy = |s: usize| audio[s..s + CUT_WINDOW].iter().map(|x| x * x).sum::<f32>();
+                energy(a).total_cmp(&energy(b))
+            })
+            .map_or(ideal, |s| s + CUT_WINDOW / 2);
+        bounds.push(start..cut);
+        start = cut;
+    }
+    bounds.push(start..audio.len());
+    bounds
+}
+
+// ---------------------------------------------------------------------------
 // Manager
 // ---------------------------------------------------------------------------
 
@@ -214,9 +255,8 @@ impl TranscriptionManager {
         self.lock_engine().take();
     }
 
-    /// Transcribes 16 kHz mono audio with auto language detection, then applies
-    /// the guard: a language other than en/vi re-runs forced to `vi`, kept only
-    /// if the text reads reliably as Vietnamese, else re-runs forced to `en`.
+    /// Transcribes 16 kHz mono audio with auto language detection, segment by
+    /// segment (see `segment_bounds`), each through the en/vi language guard.
     pub fn transcribe(
         &self,
         audio: &[f32],
@@ -235,35 +275,23 @@ impl TranscriptionManager {
         let mut guard = self.lock_engine();
         let engine = guard.as_mut().ok_or(TranscribeError::ModelMissing)?;
 
-        let first = run(engine, audio, None, custom_words, &self.cancel)?;
-        let result = match supported_language(first.1.as_deref()) {
-            Some(language) => Transcription {
-                text: first.0,
-                language,
-            },
-            None if first.0.trim().is_empty() => Transcription {
-                text: first.0,
-                language: "en",
-            },
-            None => {
-                log::info!(
-                    "Detected language {:?} is not en/vi; re-running as vi",
-                    first.1
-                );
-                let vi = run(engine, audio, Some("vi"), custom_words, &self.cancel)?;
-                if is_reliably_vietnamese(&vi.0) {
-                    Transcription {
-                        text: vi.0,
-                        language: "vi",
-                    }
-                } else {
-                    let en = run(engine, audio, Some("en"), custom_words, &self.cancel)?;
-                    Transcription {
-                        text: en.0,
-                        language: "en",
-                    }
-                }
+        let mut texts = Vec::new();
+        // Samples heard per language; the transcript takes the larger.
+        let (mut en_samples, mut vi_samples) = (0, 0);
+        for range in segment_bounds(audio) {
+            let len = range.len();
+            let part = transcribe_segment(engine, &audio[range], custom_words, &self.cancel)?;
+            match part.language {
+                "vi" => vi_samples += len,
+                _ => en_samples += len,
             }
+            if !part.text.is_empty() {
+                texts.push(part.text);
+            }
+        }
+        let result = Transcription {
+            text: texts.join(" "),
+            language: if vi_samples > en_samples { "vi" } else { "en" },
         };
         drop(guard);
         self.touch();
@@ -275,6 +303,47 @@ impl TranscriptionManager {
         );
         Ok(result)
     }
+}
+
+/// One model pass with the language guard: a language other than en/vi
+/// re-runs forced to `vi`, kept only if it reads reliably as Vietnamese, else
+/// re-runs forced to `en`.
+fn transcribe_segment(
+    engine: &mut Engine,
+    audio: &[f32],
+    custom_words: &[String],
+    cancel: &CancelToken,
+) -> Result<Transcription, TranscribeError> {
+    let first = run(engine, audio, None, custom_words, cancel)?;
+    Ok(match supported_language(first.1.as_deref()) {
+        Some(language) => Transcription {
+            text: first.0,
+            language,
+        },
+        None if first.0.trim().is_empty() => Transcription {
+            text: first.0,
+            language: "en",
+        },
+        None => {
+            log::info!(
+                "Detected language {:?} is not en/vi; re-running as vi",
+                first.1
+            );
+            let vi = run(engine, audio, Some("vi"), custom_words, cancel)?;
+            if is_reliably_vietnamese(&vi.0) {
+                Transcription {
+                    text: vi.0,
+                    language: "vi",
+                }
+            } else {
+                let en = run(engine, audio, Some("en"), custom_words, cancel)?;
+                Transcription {
+                    text: en.0,
+                    language: "en",
+                }
+            }
+        }
+    })
 }
 
 fn run(
@@ -336,6 +405,39 @@ mod tests {
         assert!(!is_reliably_vietnamese(
             "Hey, can you send me the quarterly report by Friday afternoon?"
         ));
+    }
+
+    #[test]
+    fn short_audio_is_one_segment() {
+        let audio = vec![0.5; SEGMENT_SAMPLES];
+        assert_eq!(segment_bounds(&audio), vec![0..SEGMENT_SAMPLES]);
+    }
+
+    #[test]
+    fn long_audio_segments_cover_it_and_stay_short() {
+        // 111.66 s: the dictation that failed whole.
+        let audio = vec![0.5; 1_786_560];
+        let bounds = segment_bounds(&audio);
+        assert_eq!(bounds.len(), 6);
+        assert_eq!(bounds[0].start, 0);
+        assert_eq!(bounds.last().unwrap().end, audio.len());
+        for pair in bounds.windows(2) {
+            assert_eq!(pair[0].end, pair[1].start);
+        }
+        for range in &bounds {
+            assert!(range.len() <= SEGMENT_SAMPLES + CUT_SEARCH_SAMPLES);
+        }
+    }
+
+    #[test]
+    fn cut_lands_in_the_pause_near_the_split_point() {
+        // 30 s of "speech" with a 100 ms pause 1 s after the 15 s midpoint.
+        let mut audio = vec![0.5; 30 * 16_000];
+        let pause = 16 * 16_000..16 * 16_000 + 1_600;
+        audio[pause.clone()].fill(0.0);
+        let bounds = segment_bounds(&audio);
+        assert_eq!(bounds.len(), 2);
+        assert!(pause.contains(&bounds[0].end), "cut at {}", bounds[0].end);
     }
 
     #[test]

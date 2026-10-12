@@ -9,7 +9,7 @@
 use std::{
     io::Error,
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         mpsc, Arc, Mutex,
     },
     time::{Duration, Instant},
@@ -59,6 +59,8 @@ pub struct AudioRecorder {
     /// Input channel to use; `None` averages all channels.
     selected_channel: Option<usize>,
     stream_error: Arc<AtomicBool>,
+    /// Speech samples kept by the VAD so far in the current recording.
+    speech_samples: Arc<AtomicUsize>,
 }
 
 impl AudioRecorder {
@@ -70,6 +72,7 @@ impl AudioRecorder {
             level_cb: None,
             selected_channel: None,
             stream_error: Arc::new(AtomicBool::new(false)),
+            speech_samples: Arc::new(AtomicUsize::new(0)),
         }
     }
 
@@ -79,6 +82,11 @@ impl AudioRecorder {
     {
         self.level_cb = Some(Arc::new(cb));
         self
+    }
+
+    /// Grows while the user speaks, so it doubles as a silence clock.
+    pub fn speech_samples(&self) -> usize {
+        self.speech_samples.load(Ordering::Relaxed)
     }
 
     pub fn set_selected_channel(&mut self, channel: Option<u16>) {
@@ -109,6 +117,7 @@ impl AudioRecorder {
         let level_cb = self.level_cb.clone();
         let selected_channel = self.selected_channel;
         let stream_error = Arc::clone(&self.stream_error);
+        let speech_samples = Arc::clone(&self.speech_samples);
 
         let worker = std::thread::spawn(move || {
             let transport = Arc::new(CaptureTransportState::default());
@@ -156,7 +165,8 @@ impl AudioRecorder {
             match init {
                 Ok((stream, sample_rate, consumer)) => {
                     let _ = init_tx.send(Ok(()));
-                    let processor = CaptureProcessor::new(sample_rate, vad, level_cb);
+                    let processor =
+                        CaptureProcessor::new(sample_rate, vad, level_cb, speech_samples);
                     run_consumer(processor, consumer, cmd_rx, transport, stream_error);
                     drop(stream);
                 }
@@ -364,11 +374,17 @@ struct CaptureProcessor {
     resampler: FrameResampler,
     max_drain_samples: usize,
     processed: Vec<f32>,
+    speech_samples: Arc<AtomicUsize>,
     dropped_samples: u64,
 }
 
 impl CaptureProcessor {
-    fn new(in_sample_rate: u32, vad: SharedVad, level_cb: Option<LevelCallback>) -> Self {
+    fn new(
+        in_sample_rate: u32,
+        vad: SharedVad,
+        level_cb: Option<LevelCallback>,
+        speech_samples: Arc<AtomicUsize>,
+    ) -> Self {
         let frame_samples = vad.lock().unwrap().frame_samples();
         let frame_duration = Duration::from_secs_f64(frame_samples as f64 / SAMPLE_RATE as f64);
         let resampler = FrameResampler::new(
@@ -388,6 +404,7 @@ impl CaptureProcessor {
             resampler,
             max_drain_samples,
             processed: Vec::new(),
+            speech_samples,
             dropped_samples: 0,
         }
     }
@@ -395,6 +412,7 @@ impl CaptureProcessor {
     fn begin_recording(&mut self) {
         self.dropped_samples = 0;
         self.processed.clear();
+        self.speech_samples.store(0, Ordering::Relaxed);
         self.level.reset();
         self.resampler.reset();
         self.vad.lock().unwrap().reset();
@@ -430,6 +448,8 @@ impl CaptureProcessor {
         let processed = &mut self.processed;
         self.resampler
             .push(raw, |frame| handle_frame(frame, vad, processed));
+        self.speech_samples
+            .store(self.processed.len(), Ordering::Relaxed);
     }
 
     fn finish_recording(&mut self) -> Vec<f32> {

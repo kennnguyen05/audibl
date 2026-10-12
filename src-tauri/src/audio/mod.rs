@@ -171,6 +171,15 @@ impl AudioManager {
     pub fn is_recording(&self) -> bool {
         self.recording.load(Ordering::SeqCst)
     }
+
+    /// Speech kept so far in the current recording, in 16 kHz samples.
+    pub fn speech_samples(&self) -> usize {
+        self.recorder
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map_or(0, |r| r.speech_samples())
+    }
 }
 
 /// Speech shorter than one second is padded to 1.25 s with silence; very

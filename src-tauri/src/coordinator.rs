@@ -31,6 +31,10 @@ pub enum Input {
     StartFailed,
     /// The pipeline for session `u64` finished (pasted, empty, or failed).
     ProcessingDone(u64),
+    /// Session `u64` has heard no speech for `actions::SILENCE_TIMEOUT`.
+    /// Finishes a locked session only: in Hold the key is still down, so the
+    /// silence is deliberate.
+    SilenceTimeout(u64),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,6 +131,11 @@ impl CoordinatorState {
                 // A locked session is stopped by the next press; in Hold the
                 // key release stops it.
                 (_, Input::ShortcutPressed) if self.is_locked() => self.finish(session),
+                (_, Input::SilenceTimeout(timed_out))
+                    if timed_out == session && self.is_locked() =>
+                {
+                    self.finish(session)
+                }
                 (ActivationMode::Hold, Input::ShortcutReleased) => self.finish(session),
                 (ActivationMode::Auto, Input::ShortcutReleased) => {
                     let held = self
@@ -488,6 +497,50 @@ mod tests {
         assert_eq!(
             d.send_after(HOLD_THRESHOLD, Input::ShortcutReleased, Auto),
             Some(Effect::FinishRecording { session: 2 })
+        );
+    }
+
+    #[test]
+    fn silence_finishes_a_locked_session() {
+        for mode in [Auto, Toggle] {
+            let mut d = Driver::new();
+            d.send(Input::ShortcutPressed, mode);
+            d.send(Input::ShortcutReleased, mode);
+            assert_eq!(
+                d.send(Input::SilenceTimeout(1), mode),
+                Some(Effect::FinishRecording { session: 1 }),
+                "{mode:?}"
+            );
+            assert_eq!(d.state.stage, Stage::Processing { session: 1 });
+        }
+    }
+
+    #[test]
+    fn silence_does_not_finish_a_held_key() {
+        let mut d = Driver::new();
+        d.send(Input::ShortcutPressed, Hold);
+        assert_eq!(d.send(Input::SilenceTimeout(1), Hold), None);
+        // Auto before its release is classified is still a hold.
+        let mut d = Driver::new();
+        d.send(Input::ShortcutPressed, Auto);
+        assert_eq!(d.send(Input::SilenceTimeout(1), Auto), None);
+    }
+
+    #[test]
+    fn stale_silence_timeout_is_ignored() {
+        let mut d = Driver::new();
+        d.send(Input::ShortcutPressed, Toggle);
+        d.send(Input::ShortcutPressed, Toggle);
+        d.send(Input::ProcessingDone(1), Toggle);
+        d.send(Input::ShortcutPressed, Toggle);
+        // Session 1's watcher fires late, during session 2.
+        assert_eq!(d.send(Input::SilenceTimeout(1), Toggle), None);
+        assert_eq!(
+            d.state.stage,
+            Stage::Recording {
+                session: 2,
+                mode: Toggle
+            }
         );
     }
 

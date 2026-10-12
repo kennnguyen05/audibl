@@ -11,7 +11,24 @@ use crate::transcription::{TranscribeError, TranscriptionManager};
 use crate::tray::{self, TrayIconState};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager};
+
+/// A locked recording that hears no speech for this long finishes by itself,
+/// so a forgotten session doesn't keep the mic open and the output muted.
+/// Debug builds accept `AUDIBLE_SILENCE_SECS`.
+pub const SILENCE_TIMEOUT: Duration = Duration::from_secs(60);
+
+fn silence_timeout() -> Duration {
+    #[cfg(debug_assertions)]
+    if let Some(secs) = std::env::var("AUDIBLE_SILENCE_SECS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        return Duration::from_secs(secs);
+    }
+    SILENCE_TIMEOUT
+}
 
 /// Session id of the dictation in progress; 0 when idle. A pipeline only
 /// pastes or tears down UI while its session is still the active one, so a
@@ -77,6 +94,37 @@ fn start(app: &AppHandle, session: u64) {
     shortcut::arm_cancel(app);
     overlay::show(app, OverlayState::Recording);
     tray::set_tray_state(app, TrayIconState::Recording);
+    watch_silence(app, session);
+}
+
+/// Sends `SilenceTimeout` once `session` has kept no new speech for
+/// `silence_timeout()`. The coordinator decides whether that ends it.
+fn watch_silence(app: &AppHandle, session: u64) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let timeout = silence_timeout();
+        let audio = app.state::<AudioManager>();
+        let mut heard = audio.speech_samples();
+        let mut quiet_since = Instant::now();
+        loop {
+            std::thread::sleep(Duration::from_secs(1));
+            if !is_active(session) || !audio.is_recording() {
+                return;
+            }
+            let now_heard = audio.speech_samples();
+            if now_heard != heard {
+                heard = now_heard;
+                quiet_since = Instant::now();
+            } else if quiet_since.elapsed() >= timeout {
+                log::info!(
+                    "No speech for {}s; finishing the recording",
+                    timeout.as_secs()
+                );
+                send(&app, Input::SilenceTimeout(session));
+                return;
+            }
+        }
+    });
 }
 
 fn finish(app: &AppHandle, session: u64) {
